@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Type, Trash2, Sparkles, Zap, Loader2 } from 'lucide-react';
+import { Type, Trash2, Sparkles, Zap, Loader2, Menu } from 'lucide-react';
 import clsx from 'clsx';
 import VoiceSelector from './VoiceSelector';
 import { audioEngine } from '../lib/AudioEngine';
@@ -10,7 +10,7 @@ import Toast, { ToastRef } from './Toast';
 export default function Editor() {
   const [text, setText] = useState('');
   const [styleInstruction, setStyleInstruction] = useState('');
-  const { isGenerating, apiKey } = useSettingsStore();
+  const { isGenerating, apiKey, setSidebarOpen } = useSettingsStore();
   const toastRef = useRef<ToastRef>(null);
 
   const handleClear = () => {
@@ -36,46 +36,60 @@ export default function Editor() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4 lg:p-8 overflow-y-auto pb-32 bg-[var(--bg-primary)]">
+    <div className="flex h-full flex-col gap-6 p-4 lg:p-8 overflow-y-auto pb-32">
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between">
+        <button 
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+        >
+          <Menu size={24} />
+        </button>
+        <div className="font-bold text-[var(--color-neon-cyan)]">
+          MUTU AUDIO
+        </div>
+      </div>
       <Toast ref={toastRef} />
       
       {/* Style Instructions */}
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-neon-cyan)]">
           <Sparkles size={16} />
           <span>Style Instructions</span>
         </label>
-        <div className="relative">
+        <div className="relative group">
           <input
             type="text"
             value={styleInstruction}
             onChange={(e) => setStyleInstruction(e.target.value)}
-            placeholder="E.g., A calm, soothing voice..."
-            className="w-full rounded-lg border border-[var(--border-glass)] bg-[var(--bg-surface)] px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-secondary)] transition-all focus:border-[var(--accent-primary)] focus:bg-[var(--bg-surface)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]"
+            placeholder="E.g., Speak like a news anchor, Expressive storyteller, খুব দ্রুত বলো..."
+            className="w-full rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] transition-all focus:border-[var(--color-neon-cyan)] focus:bg-[var(--color-bg-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
           />
+          <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-[var(--color-neon-cyan)] to-purple-600 opacity-0 blur transition-opacity duration-500 group-focus-within:opacity-20" />
         </div>
       </div>
 
       {/* Main Text Area */}
       <div className="relative flex-1 min-h-[300px]">
+        <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-[var(--color-neon-cyan-dim)] to-transparent opacity-50 blur-sm" />
         <div className={clsx(
-          "relative flex h-full flex-col overflow-hidden rounded-lg border bg-[var(--bg-surface)] transition-all duration-500",
+          "relative flex h-full flex-col overflow-hidden rounded-2xl border bg-[var(--color-cyber-black)]/40 backdrop-blur-md transition-all duration-500",
           isGenerating 
-            ? "border-[var(--accent-primary)] shadow-[0_0_20px_rgba(167,139,250,0.2)]" 
-            : "border-[var(--border-glass)]"
+            ? "border-[var(--color-neon-cyan)] shadow-[0_0_30px_rgba(0,255,242,0.2)]" 
+            : "border-[var(--color-glass-border)]"
         )}>
-          <div className="flex items-center justify-between border-b border-[var(--border-glass)] bg-black/20 px-4 py-2">
-            <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+          <div className="flex items-center justify-between border-b border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-2">
+            <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-secondary)]">
               <Type size={14} />
-              <span>Script</span>
+              <span>SCRIPT EDITOR</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-xs text-[var(--text-secondary)] font-mono">
-                {text.length}
+              <span className="text-xs text-[var(--color-text-secondary)]">
+                {text.length} characters
               </span>
               <button
                 onClick={handleClear}
-                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors"
               >
                 <Trash2 size={14} />
                 Clear
@@ -87,21 +101,21 @@ export default function Editor() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Enter your script here..."
-            className="flex-1 resize-none bg-transparent p-6 text-lg leading-relaxed text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none font-sans"
+            className="flex-1 resize-none bg-transparent p-6 text-lg leading-relaxed text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none font-sans"
             spellCheck={false}
           />
           
           {/* Action Bar */}
-          <div className="border-t border-[var(--border-glass)] bg-black/20 p-2 flex justify-end items-center">
+          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-end">
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="flex items-center justify-center gap-2 rounded-lg bg-[var(--accent-primary)] px-5 py-3 font-bold text-[var(--text-on-accent)] transition-all hover:bg-violet-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
+                className="flex items-center gap-2 rounded-xl bg-[var(--color-neon-cyan)] px-4 py-2 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-cyan)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isGenerating ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>SYNTHESIZING...</span>
+                    <span>SYNCING...</span>
                   </>
                 ) : (
                   <>
