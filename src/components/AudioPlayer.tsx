@@ -190,11 +190,11 @@ export default function AudioPlayer() {
 
             {/* Main Controls */}
             <div className="flex items-center gap-6 justify-center w-full mb-6">
-              <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipBack size={24} /></button>
-              <button onClick={togglePlay} className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-white shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
+              <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipBack size={24} /></button>
+              <button onClick={togglePlay} className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-[var(--color-text-on-accent)] shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
                 {isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
               </button>
-              <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipForward size={24} /></button>
+              <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipForward size={24} /></button>
             </div>
 
             <div className="flex-grow"></div> {/* Spacer */}
@@ -235,7 +235,7 @@ export default function AudioPlayer() {
           <div className="flex items-center justify-between w-full">
             {/* Left: Info */}
             <div className="flex items-center gap-4 cursor-pointer" onClick={() => setIsExpanded(true)}>
-              <div className="h-12 w-12 rounded-lg bg-[var(--color-bg-surface)] flex items-center justify-center text-[var(--color-text-secondary)] border border-[var(--color-glass-border)] shrink-0">
+              <div className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0">
                 <Mic2 size={24} />
               </div>
               <div className="flex flex-col justify-center overflow-hidden">
@@ -252,7 +252,7 @@ export default function AudioPlayer() {
 
             {/* Right: Mini Controls */}
             <div className="flex items-center gap-2">
-              <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="lg:hidden flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-all active:scale-95 shadow-lg">
+              <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="lg:hidden flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-[var(--color-text-on-accent)] transition-all active:scale-95">
                 {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
               </button>
             </div>
@@ -274,11 +274,11 @@ export default function AudioPlayer() {
 
             {/* Center Controls */}
             <div className="flex items-center gap-6 justify-center w-1/3">
-                <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipBack size={20} /></button>
-                <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-white shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
+                <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipBack size={20} /></button>
+                <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-[var(--color-text-on-accent)] shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
                     {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
                 </button>
-                <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipForward size={20} /></button>
+                <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipForward size={20} /></button>
             </div>
 
             {/* Right Controls */}
@@ -286,7 +286,7 @@ export default function AudioPlayer() {
                 <button onClick={handleSave} disabled={isSaving || isSaved} className={clsx("transition-colors p-2", isSaved ? "text-green-400" : "text-[var(--color-text-secondary)] hover:text-[var(--color-neon-cyan)]")} title="Save to Library">
                     {isSaving ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-[var(--color-neon-cyan)]" /> : isSaved ? <Check size={20} /> : <Save size={20} />}
                 </button>
-                <button onClick={handleDownload} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><Download size={20} /></button>
+                <button onClick={handleDownload} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><Download size={20} /></button>
             </div>
         </div>
 

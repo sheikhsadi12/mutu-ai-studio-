@@ -18,7 +18,7 @@ export default function AudioLibrary() {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [renamingAudio, setRenamingAudio] = useState<AudioFile | null>(null);
   const [pendingMergeBlob, setPendingMergeBlob] = useState<Blob | null>(null);
-  const { setIsPlaying, setPlaylist, setCurrentIndex, setCurrentAudioId } = useSettingsStore();
+  const { setIsPlaying, setPlaylist, setCurrentIndex, setSidebarOpen } = useSettingsStore();
 
   // Refresh library trigger
   const [refreshKey, setRefreshKey] = useState(0);
@@ -67,15 +67,13 @@ export default function AudioLibrary() {
   };
 
   const handlePlay = (audio: AudioFile, index: number) => {
-    // 1. Immediate UI update
     setCurrentIndex(index);
-    setCurrentAudioId(audio.id);
-    setIsPlaying(true);
-    
-    // 2. Non-blocking load and play
-    audioEngine.loadBlob(audio.blob).catch(error => {
-      console.error("[AudioLibrary] Playback failed:", error);
-      setIsPlaying(false);
+    setIsPlaying(true); // Optimistically set playing state
+    audioEngine.loadBlob(audio.blob).then(() => {
+      // The play logic is now handled inside loadBlob
+    }).catch(error => {
+      console.error("Failed to play audio:", error);
+      setIsPlaying(false); // Revert on error
     });
   };
 
@@ -379,16 +377,24 @@ export default function AudioLibrary() {
         itemType={pendingMergeBlob ? 'merged file' : 'recording'}
       />
       {/* Search Bar & Selection Toggle */}
-      <div className="px-4 py-3 border-b border-[var(--color-glass-border)] space-y-3">
+      <div className="px-4 py-2 border-b border-[var(--color-glass-border)] space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Library</h3>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1 -ml-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            >
+              <X size={16} />
+            </button>
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Library</h3>
+          </div>
           <button 
             onClick={() => {
               setIsSelectionMode(!isSelectionMode);
               if (isSelectionMode) setSelectedIds(new Set());
             }}
             className={clsx(
-              "text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded transition-colors",
+              "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded transition-colors",
               isSelectionMode ? "bg-[var(--color-neon-cyan)] text-[var(--color-text-on-accent)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-glass-border)]"
             )}
           >
@@ -396,27 +402,27 @@ export default function AudioLibrary() {
           </button>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--color-text-secondary)]" />
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
           <input
             type="text"
             placeholder="Search recordings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] py-2 pl-9 pr-4 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none"
+            className="w-full rounded-md border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] py-1.5 pl-8 pr-3 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none"
           />
         </div>
       </div>
 
       {/* Lists */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2 space-y-3">
         <div>
-          <h4 className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-2">Recordings</h4>
+          <h4 className="px-2 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-1.5">Recordings</h4>
           <div className="space-y-1">
             {renderAudioList(filteredAudios)}
           </div>
         </div>
         <div>
-          <h4 className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-2">Merged Files</h4>
+          <h4 className="px-2 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-1.5">Merged Files</h4>
           <div className="space-y-1">
             {renderAudioList(filteredMergedAudios, true)}
           </div>
@@ -425,45 +431,47 @@ export default function AudioLibrary() {
 
       {/* Footer Actions */}
       {audios.length > 0 && (
-        <div className="p-4 border-t border-[var(--color-glass-border)] space-y-2">
-          {selectedIds.size >= 2 && (
-            <div className="space-y-2">
-                <div className="flex items-center justify-center gap-4 text-[10px] text-[var(--color-text-secondary)] bg-[var(--color-bg-hover)] py-1 rounded-lg">
-                    <label className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-text-primary)]">
-                        <input 
-                            type="radio" 
-                            name="transition" 
-                            checked={transitionType === 'gap'} 
-                            onChange={() => setTransitionType('gap')}
-                            className="accent-[var(--color-neon-cyan)]"
-                        /> Gap (0.5s)
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-text-primary)]">
-                        <input 
-                            type="radio" 
-                            name="transition" 
-                            checked={transitionType === 'crossfade'} 
-                            onChange={() => setTransitionType('crossfade')}
-                            className="accent-[var(--color-neon-cyan)]"
-                        /> Crossfade (0.5s)
-                    </label>
-                </div>
-                <button
-                onClick={handleMerge}
-                disabled={isMerging}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-neon-cyan)] py-2 text-xs font-bold text-[var(--color-text-on-accent)] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_15px_var(--color-neon-cyan-dim)]"
-                >
-                {isMerging ? 'MERGING...' : `MERGE SELECTED (${selectedIds.size})`}
-                </button>
-            </div>
-          )}
-          <button
-            onClick={handleDownloadSelected}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] py-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]/80 transition-colors"
-          >
-            <Archive size={14} />
-            {selectedIds.size > 0 ? `Download Selected (${selectedIds.size})` : 'Download All (ZIP)'}
-          </button>
+        <div className="sticky bottom-0 p-2 bg-gradient-to-t from-[var(--color-cyber-black)] via-[var(--color-cyber-black)] to-transparent pt-6">
+          <div className="rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)]/80 backdrop-blur-md p-1.5 space-y-1.5 shadow-2xl">
+            {selectedIds.size >= 2 && (
+              <div className="space-y-1.5">
+                  <div className="flex items-center justify-center gap-4 text-[9px] text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] py-0.5 rounded-md">
+                      <label className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-text-primary)]">
+                          <input 
+                              type="radio" 
+                              name="transition" 
+                              checked={transitionType === 'gap'} 
+                              onChange={() => setTransitionType('gap')}
+                              className="accent-[var(--color-neon-cyan)]"
+                          /> Gap
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-text-primary)]">
+                          <input 
+                              type="radio" 
+                              name="transition" 
+                              checked={transitionType === 'crossfade'} 
+                              onChange={() => setTransitionType('crossfade')}
+                              className="accent-[var(--color-neon-cyan)]"
+                          /> Crossfade
+                      </label>
+                  </div>
+                  <button
+                  onClick={handleMerge}
+                  disabled={isMerging}
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-neon-cyan)] py-1.5 text-[10px] font-bold text-[var(--color-text-on-accent)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                  {isMerging ? 'MERGING...' : `MERGE SELECTED (${selectedIds.size})`}
+                  </button>
+              </div>
+            )}
+            <button
+              onClick={handleDownloadSelected}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-bg-surface)] py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+            >
+              <Archive size={12} />
+              {selectedIds.size > 0 ? `Download Selected (${selectedIds.size})` : 'Download All (ZIP)'}
+            </button>
+          </div>
         </div>
       )}
     </div>

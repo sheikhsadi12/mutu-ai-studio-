@@ -38,7 +38,7 @@ class AudioEngine {
       this.gainNode.connect(this.audioContext.destination);
     }
     if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+      this.audioContext.resume().catch(console.error);
     }
   }
 
@@ -47,19 +47,24 @@ class AudioEngine {
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
 
-    this.stop();
+    // Stop current playback but keep context
+    this.resetPlaybackState();
     this.initAudioContext();
     
     setIsGenerating(true);
     setIsBuffering(true);
     this.isBuffering = true;
     this.isPlaying = true;
+    setIsPlaying(true);
     this.isStreamFinished = false;
     this.chunkQueue = [];
     this.accumulatedBytes = [];
     this.nextStartTime = this.audioContext!.currentTime + 0.1;
     this.totalDurationScheduled = 0;
     this.abortController = new AbortController();
+    this.fullLoadedBuffer = null; // Clear loaded buffer for streaming
+    this.pausedTime = 0;
+    this.playbackStartTime = 0;
 
     try {
       const ai = new GoogleGenAI({ apiKey });
@@ -249,37 +254,41 @@ class AudioEngine {
   }
 
   play() {
-    if (!this.audioContext) return;
+    this.initAudioContext();
     
     if (this.fullLoadedBuffer) { // Logic for loaded file
-        if (this.audioContext.state === 'suspended') this.audioContext.resume();
         this.playLoadedBuffer(this.pausedTime);
-    } else { // Original logic for streaming
+    } else if (this.isPlaying === false && this.isStreamFinished === false) { // Original logic for streaming resume
         this.isPlaying = true;
         useSettingsStore.getState().setIsPlaying(true);
-        if (this.audioContext.state === 'suspended') this.audioContext.resume();
         this.startScheduler();
     }
   }
 
   pause() {
-    if (!this.audioContext) return;
     this.isPlaying = false;
     useSettingsStore.getState().setIsPlaying(false);
-    this.audioContext.suspend();
-
-    if (this.fullLoadedBuffer) {
+    
+    if (this.fullLoadedBuffer && this.audioContext) {
         this.pausedTime = this.audioContext.currentTime - this.playbackStartTime;
     }
+    
+    if (this.currentSource) {
+        try { this.currentSource.onended = null; this.currentSource.stop(); } catch(e) {}
+        this.currentSource = null;
+    }
+
     this.stopProgressUpdater();
+    
+    if (this.schedulerInterval) {
+        window.clearInterval(this.schedulerInterval);
+        this.schedulerInterval = null;
+    }
   }
 
-  stop() {
+  private resetPlaybackState() {
     this.isPlaying = false;
     this.isBuffering = false;
-    this.isStreamFinished = true;
-    this.chunkQueue = [];
-    this.totalDurationScheduled = 0;
     this.abortController?.abort();
     this.stopProgressUpdater();
 
@@ -288,9 +297,6 @@ class AudioEngine {
       try { this.currentSource.stop(); } catch(e) {}
       this.currentSource = null;
     }
-    this.fullLoadedBuffer = null;
-    this.pausedTime = 0;
-    this.playbackStartTime = 0;
     
     if (this.schedulerInterval) {
       window.clearInterval(this.schedulerInterval);
@@ -301,16 +307,19 @@ class AudioEngine {
     state.setIsPlaying(false);
     state.setIsBuffering(false);
     state.setIsGenerating(false);
-    state.setProgress(0);
+  }
 
-    if (this.audioContext) {
-      this.audioContext.close().catch(() => {});
-      this.audioContext = null;
-      this.accumulatedBytes = []; // Clear accumulated bytes when context is closed
-    }
+  stop() {
+    this.resetPlaybackState();
+    this.isStreamFinished = true;
+    this.chunkQueue = [];
+    this.totalDurationScheduled = 0;
+    this.fullLoadedBuffer = null;
+    this.pausedTime = 0;
+    this.playbackStartTime = 0;
+    this.accumulatedBytes = [];
     
-    // Memory Management: Clear accumulated bytes only when explicitly stopping or starting new
-    // We keep them if the stream just finished so exportMp3 still works until next start
+    useSettingsStore.getState().setProgress(0);
   }
 
   setSpeed(speed: number) {
@@ -322,40 +331,27 @@ class AudioEngine {
   }
 
   async loadBlob(blob: Blob): Promise<void> {
-    // 1. Immediate UI Feedback
-    const state = useSettingsStore.getState();
-    state.setIsBuffering(true);
-    state.setIsPlaying(true);
-
-    // 2. Clean up previous playback surgically
-    if (this.currentSource) {
-      this.currentSource.onended = null;
-      try { this.currentSource.stop(); } catch(e) {}
-      this.currentSource = null;
-    }
-    this.stopProgressUpdater();
-    this.pausedTime = 0;
-    this.playbackStartTime = 0;
-
-    // 3. Load and Decode
+    this.resetPlaybackState();
     this.initAudioContext();
+    useSettingsStore.getState().setIsBuffering(true);
     const arrayBuffer = await blob.arrayBuffer();
     try {
-      const buffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+      const buffer = await this.audioContext!.decodeAudioData(arrayBuffer.slice(0));
       this.fullLoadedBuffer = buffer;
       this.isStreamFinished = true;
-
-      // Update duration in playlist
+      this.pausedTime = 0;
+      this.playbackStartTime = 0;
+      
+      // Immediately update the total duration for the UI
       const { playlist, currentIndex } = useSettingsStore.getState();
       if (playlist[currentIndex]) {
         playlist[currentIndex].duration = buffer.duration;
         useSettingsStore.getState().setPlaylist([...playlist]);
       }
-
       this.stopBuffering();
       this.playLoadedBuffer(0);
     } catch (error) {
-      console.error("[AudioEngine] Playback failed:", error);
+      console.error("Failed to decode audio blob", error);
       this.stop();
     }
   }
@@ -596,16 +592,23 @@ class AudioEngine {
     const source = this.audioContext.createBufferSource();
     source.buffer = this.fullLoadedBuffer;
     source.connect(this.gainNode!);
-    source.start(0, startTime);
+    
+    // Ensure startTime is within bounds
+    const actualStartTime = Math.max(0, Math.min(startTime, this.fullLoadedBuffer.duration));
+    
+    source.start(0, actualStartTime);
     
     source.onended = () => {
-      if (this.audioContext && this.fullLoadedBuffer && this.audioContext.currentTime >= this.playbackStartTime + this.fullLoadedBuffer.duration - 0.1) {
-        this.stop();
+      if (this.isPlaying && this.audioContext && this.fullLoadedBuffer) {
+        const elapsed = this.audioContext.currentTime - this.playbackStartTime;
+        if (elapsed >= this.fullLoadedBuffer.duration - 0.1) {
+          this.stop();
+        }
       }
     };
 
     this.currentSource = source;
-    this.playbackStartTime = this.audioContext.currentTime - startTime;
+    this.playbackStartTime = this.audioContext.currentTime - actualStartTime;
     this.isPlaying = true;
     useSettingsStore.getState().setIsPlaying(true);
 

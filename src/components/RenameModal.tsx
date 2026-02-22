@@ -23,14 +23,14 @@ export default function RenameModal({ isOpen, onClose, onRename, currentName, it
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in">
       <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-cyber-black)] p-6 shadow-xl">
-        <h3 className="text-lg font-medium text-white">Rename {itemType}</h3>
+        <h3 className="text-lg font-medium text-[var(--color-text-primary)]">Rename {itemType}</h3>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Enter a new name for the {itemType}.</p>
         <form onSubmit={handleSubmit} className="mt-4">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            className="w-full rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-3 py-2 text-white placeholder-gray-500 focus:border-[var(--color-neon-cyan)] focus:outline-none"
+            className="w-full rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-3 py-2 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none"
             autoFocus
           />
           <div className="mt-6 flex justify-end gap-3">

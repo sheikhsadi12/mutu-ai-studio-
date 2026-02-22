@@ -36,13 +36,13 @@ export default function Editor() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4 lg:p-8 overflow-y-auto pb-32">
+    <div className="flex h-full flex-col gap-4 p-4 lg:p-8 overflow-y-auto pb-32">
       <Toast ref={toastRef} />
       
       {/* Style Instructions */}
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-neon-cyan)]">
-          <Sparkles size={16} />
+      <div className="space-y-1.5">
+        <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
+          <Sparkles size={12} />
           <span>Style Instructions</span>
         </label>
         <div className="relative group">
@@ -50,7 +50,7 @@ export default function Editor() {
             type="text"
             value={styleInstruction}
             onChange={(e) => setStyleInstruction(e.target.value)}
-            placeholder="E.g. Speak like a news anchor Express..."
+            placeholder="E.g., Speak like a news anchor, Expressive storyteller, খুব দ্রুত বলো..."
             className="w-full rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] transition-all focus:border-[var(--color-neon-cyan)] focus:bg-[var(--color-bg-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
           />
           <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-[var(--color-neon-cyan)] to-purple-600 opacity-0 blur transition-opacity duration-500 group-focus-within:opacity-20" />
@@ -58,7 +58,7 @@ export default function Editor() {
       </div>
 
       {/* Main Text Area */}
-      <div className="relative flex-1 min-h-[300px]">
+      <div className="relative flex-[2] min-h-[400px]">
         <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-[var(--color-neon-cyan-dim)] to-transparent opacity-50 blur-sm" />
         <div className={clsx(
           "relative flex h-full flex-col overflow-hidden rounded-2xl border bg-[var(--color-cyber-black)]/40 backdrop-blur-2xl transition-all duration-500 noise-overlay",
@@ -66,20 +66,20 @@ export default function Editor() {
             ? "border-[var(--color-neon-cyan)] shadow-[0_0_30px_rgba(0,255,242,0.2)]" 
             : "border-[var(--color-glass-border)]"
         )}>
-          <div className="flex items-center justify-between border-b border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-2">
-            <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-secondary)]">
-              <Type size={14} />
+          <div className="flex items-center justify-between border-b border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-1.5">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+              <Type size={12} />
               <span>SCRIPT EDITOR</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-xs text-[var(--color-text-secondary)]">
-                {text.length} characters
+              <span className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider">
+                {text.length} chars
               </span>
               <button
                 onClick={handleClear}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors"
               >
-                <Trash2 size={14} />
+                <Trash2 size={12} />
                 Clear
               </button>
             </div>
@@ -89,7 +89,7 @@ export default function Editor() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Enter your script here..."
-            className="flex-1 resize-none bg-transparent p-6 text-lg leading-relaxed text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none font-sans"
+            className="flex-1 resize-none bg-transparent p-6 text-base leading-relaxed text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none font-sans"
             spellCheck={false}
           />
           
@@ -98,7 +98,7 @@ export default function Editor() {
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 font-bold text-black transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shimmer-button"
+                className="flex items-center gap-2 rounded-xl bg-[var(--color-neon-cyan)] px-4 py-2 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-cyan)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shimmer-button"
               >
                 {isGenerating ? (
                   <>
