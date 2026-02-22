@@ -9,33 +9,33 @@ export default function App() {
   const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[var(--color-cyber-black)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-neon-cyan)] selection:text-[var(--color-text-on-accent)]">
+    <div className="flex h-screen w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-[var(--text-on-accent)]">
       <Sidebar />
       
-      <main className="flex flex-1 flex-col relative w-full">
+      <main className="flex flex-1 flex-col relative w-full bg-[var(--bg-secondary)]">
         {/* Top Nav / Status Bar */}
-        <header className="flex h-16 items-center justify-between px-4 lg:px-8 border-b border-[var(--color-glass-border)] bg-[var(--color-cyber-black)]/50 backdrop-blur-sm z-10 shrink-0">
+        <header className="flex h-16 items-center justify-between px-4 lg:px-8 border-b border-[var(--border-glass)] bg-[var(--bg-secondary)] z-10 shrink-0">
           <div className="flex items-center gap-3 lg:hidden">
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
               <Menu size={24} />
             </button>
-            <span className="font-bold text-[var(--color-neon-cyan)]">MUTU</span>
+            <span className="font-bold text-[var(--accent-primary)]">MUTU</span>
           </div>
 
           <button 
             onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-3 rounded-full border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] px-4 py-1.5 backdrop-blur-md ml-auto hover:bg-[var(--color-bg-hover)] transition-colors cursor-pointer"
+            className="flex items-center gap-3 rounded-full border border-[var(--border-glass)] bg-[var(--bg-surface)] px-4 py-1.5 ml-auto hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
           >
-            <span className="hidden sm:inline text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+            <span className="hidden sm:inline text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
               API Status:
             </span>
             {apiKey ? (
-              <div className="flex items-center gap-1.5 text-[var(--color-neon-cyan)]">
+              <div className="flex items-center gap-1.5 text-[var(--accent-primary)]">
                 <ShieldCheck size={14} />
-                <span className="text-xs font-bold shadow-[0_0_10px_var(--color-neon-cyan)]">ACTIVE</span>
+                <span className="text-xs font-bold shadow-[0_0_10px_var(--accent-primary)]">ACTIVE</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-red-500">

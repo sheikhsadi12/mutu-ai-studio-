@@ -1,8 +1,6 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { useSettingsStore } from '../store/useSettingsStore';
 import { storageService } from './StorageService';
-// @ts-ignore
-import { Mp3Encoder } from './lame.js';
 
 class AudioEngine {
   private audioContext: AudioContext | null = null;
@@ -38,7 +36,7 @@ class AudioEngine {
   }
 
   async generateAudio(text: string, styleInstruction: string): Promise<void> {
-    const { apiKey, selectedVoice, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
+    const { apiKey, selectedVoice, voicePitch, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
 
@@ -58,7 +56,8 @@ class AudioEngine {
 
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: "${text}"`;
+      const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
+      const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${text}\"</prosody></speak>`;
       
       const generateStream = async () => {
         return await ai.models.generateContentStream({
@@ -289,12 +288,6 @@ class AudioEngine {
     console.warn("Playback speed locked to 1.0 for Neural Integrity");
   }
 
-  setVolume(volume: number) {
-    if (this.gainNode) {
-      this.gainNode.gain.value = Math.max(0, Math.min(1, volume));
-    }
-  }
-
   getAudioBuffer(): AudioBuffer | null {
     return null; 
   }
@@ -460,7 +453,7 @@ class AudioEngine {
       int16Samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
 
-    const mp3encoder = new Mp3Encoder(1, 24000, 128);
+    const mp3encoder = new (window as any).lamejs.Mp3Encoder(1, 24000, 128);
     const mp3Data: Int8Array[] = [];
     const sampleBlockSize = 1152;
 
@@ -505,7 +498,7 @@ class AudioEngine {
     const samples = new Int16Array(pcmData.buffer, pcmData.byteOffset, pcmData.byteLength / 2);
     
     // Initialize MP3 Encoder (Mono, 24kHz, 128kbps)
-    const mp3encoder = new Mp3Encoder(1, 24000, 128);
+    const mp3encoder = new (window as any).lamejs.Mp3Encoder(1, 24000, 128);
     const mp3Data: Int8Array[] = [];
     
     const sampleBlockSize = 1152; // Multiple of 576

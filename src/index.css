@@ -18,18 +18,18 @@
 }
 
 :root {
-  /* Default Dark Theme (Cyber) */
-  --bg-primary: #050505;
-  --bg-secondary: #0a0a0a;
-  --bg-surface: #121212;
-  --bg-hover: rgba(255, 255, 255, 0.05);
-  --accent-primary: #00f3ff;
-  --accent-dim: rgba(0, 243, 255, 0.1);
+  /* Hardware / Specialist Tool Theme */
+  --bg-primary: #111111;
+  --bg-secondary: #1E1E1E;
+  --bg-surface: #1E1E1E;
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --accent-primary: #A78BFA; /* violet-400 */
+  --accent-dim: rgba(167, 139, 250, 0.1);
   --border-glass: rgba(255, 255, 255, 0.1);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-on-accent: #000000;
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  --text-primary: #F8FAFC; /* slate-50 */
+  --text-secondary: #94A3B8; /* slate-400 */
+  --text-on-accent: #111111;
 }
 
 :root[data-theme="light"] {

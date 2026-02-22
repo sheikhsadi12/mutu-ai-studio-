@@ -1,6 +1,7 @@
 import { useState, useEffect, MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trash2, Download, Play, Edit2, Check, Music, Archive, MoreVertical, X, Scissors } from 'lucide-react';
+import RenameModal from './RenameModal';
 import { storageService, AudioFile } from '../lib/StorageService';
 import { audioEngine } from '../lib/AudioEngine';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -14,6 +15,9 @@ export default function AudioLibrary() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [renamingAudio, setRenamingAudio] = useState<AudioFile | null>(null);
+  const [pendingMergeBlob, setPendingMergeBlob] = useState<Blob | null>(null);
   const { setIsPlaying, setPlaylist, setCurrentIndex } = useSettingsStore();
 
   // Refresh library trigger
@@ -26,6 +30,8 @@ export default function AudioLibrary() {
   const [trimmingId, setTrimmingId] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState('0');
   const [trimEnd, setTrimEnd] = useState('0');
+
+  const [mergedAudios, setMergedAudios] = useState<AudioFile[]>([]);
 
   useEffect(() => {
     loadLibrary();
@@ -46,7 +52,10 @@ export default function AudioLibrary() {
     const files = await storageService.getAudios();
     // Sort by newest first
     const sorted = files.sort((a, b) => b.timestamp - a.timestamp);
-    setAudios(sorted);
+    const regularFiles = sorted.filter(f => !f.style.includes('Merged'));
+    const mergedFiles = sorted.filter(f => f.style.includes('Merged'));
+    setAudios(regularFiles);
+    setMergedAudios(mergedFiles);
     setPlaylist(sorted);
   };
 
@@ -132,21 +141,8 @@ export default function AudioLibrary() {
       
       const mergedBlob = await audioEngine.mergeAudios(blobs, transitionType);
       if (mergedBlob) {
-        const title = prompt('Enter title for merged audio:', `Merged Recording ${new Date().toLocaleTimeString()}`);
-        if (title) {
-          await storageService.saveAudio({
-            id: crypto.randomUUID(),
-            title: title,
-            voice: 'Multi-Voice',
-            style: 'Merged',
-            duration: 0, // Duration will be calculated on play
-            timestamp: Date.now(),
-            blob: mergedBlob
-          });
-          setSelectedIds(new Set());
-          loadLibrary();
-          alert('Audio merged and saved to library.');
-        }
+        setPendingMergeBlob(mergedBlob);
+        setIsRenameModalOpen(true);
       }
     } catch (error) {
       console.error('Merge failed:', error);
@@ -166,18 +162,19 @@ export default function AudioLibrary() {
     setSelectedIds(newSelection);
   };
 
-  const startEditing = (audio: AudioFile) => {
-    setEditingId(audio.id);
-    setEditTitle(audio.title);
-    setActiveMenuId(null); // Close menu
+    const startEditing = (audio: AudioFile) => {
+    setRenamingAudio(audio);
+    setIsRenameModalOpen(true);
+    setActiveMenuId(null);
   };
 
-  const saveTitle = async (id: string) => {
-    if (editTitle.trim()) {
-      await storageService.updateAudio(id, { title: editTitle.trim() });
-      setEditingId(null);
+    const handleRename = async (newName: string) => {
+    if (renamingAudio) {
+      await storageService.updateAudio(renamingAudio.id, { title: newName });
       loadLibrary();
     }
+    setIsRenameModalOpen(false);
+    setRenamingAudio(null);
   };
 
   const filteredAudios = audios.filter(audio => 
@@ -185,12 +182,199 @@ export default function AudioLibrary() {
     audio.voice.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredMergedAudios = mergedAudios.filter(audio => 
+    audio.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    audio.voice.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderAudioList = (list: AudioFile[], isMergedList = false) => {
+    if (list.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="mb-3 rounded-full bg-[var(--color-bg-hover)] p-4 text-[var(--color-text-secondary)]">
+            <Archive size={24} />
+          </div>
+          <p className="text-sm text-[var(--color-text-secondary)]">{isMergedList ? 'No merged files found' : 'No recordings found'}</p>
+        </div>
+      );
+    }
+
+    return list.map((audio, index) => (
+      <motion.div
+        layout
+        key={audio.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={clsx(
+          "group relative flex items-center gap-3 rounded-lg border border-transparent bg-[var(--color-bg-hover)] p-3 hover:border-[var(--color-glass-border)] hover:bg-[var(--color-bg-hover)]/80 transition-all",
+          selectedIds.has(audio.id) ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/20 shadow-[0_0_15px_rgba(0,255,242,0.1)]" : "hover:translate-x-1"
+        )}
+        onClick={() => isSelectionMode && toggleSelection(audio.id)}
+      >
+        <AnimatePresence>
+          {isSelectionMode && !isMergedList && (
+            <motion.div 
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              className="flex items-center overflow-hidden"
+            >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(audio.id)}
+                onChange={() => toggleSelection(audio.id)}
+                className="h-4 w-4 rounded border-gray-700 bg-black/50 text-[var(--color-neon-cyan)] focus:ring-[var(--color-neon-cyan)] cursor-pointer"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          onClick={(e) => {
+            if (isSelectionMode) return;
+            e.stopPropagation();
+            handlePlay(audio, index);
+          }}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neon-cyan-dim)] hover:text-[var(--color-neon-cyan)] transition-all"
+        >
+          <Play size={14} fill="currentColor" className="ml-0.5" />
+        </button>
+
+        <div className="flex-1 min-w-0">
+           
+            <div>
+              <h4 className="truncate text-sm font-medium text-[var(--color-text-primary)]">{audio.title}</h4>
+              <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                <span>{audio.voice}</span>
+                <span>•</span>
+                <span>{new Date(audio.timestamp).toLocaleDateString()}</span>
+              </div>
+              {trimmingId === audio.id && (
+                <div className="flex items-center gap-2 mt-2 bg-[var(--color-bg-surface)] p-2 rounded animate-in fade-in slide-in-from-top-2">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Start:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={trimStart}
+                    onChange={(e) => setTrimStart(e.target.value)}
+                    className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+                  />
+                  <span className="text-xs text-[var(--color-text-secondary)]">End:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={trimEnd}
+                    onChange={(e) => setTrimEnd(e.target.value)}
+                    className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+                  />
+                  <button onClick={() => handleTrim(audio.id)} className="text-green-400 hover:text-green-300 p-1"><Check size={14} /></button>
+                  <button onClick={() => setTrimmingId(null)} className="text-red-400 hover:text-red-300 p-1"><X size={14} /></button>
+                </div>
+              )}
+            </div>
+        </div>
+
+        {/* 3-Dot Menu */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenuId(activeMenuId === audio.id ? null : audio.id);
+            }}
+            className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-md hover:bg-[var(--color-bg-hover)]"
+          >
+            <MoreVertical size={16} />
+          </button>
+
+          <AnimatePresence>
+            {activeMenuId === audio.id && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                className="absolute right-0 top-full z-50 mt-1 w-32 overflow-hidden rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-cyber-black)] shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex flex-col p-1.5">
+                  <button
+                    onClick={() => startEditing(audio)}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+                  >
+                    <Edit2 size={14} />
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDownload(audio);
+                      setActiveMenuId(null);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+                  >
+                    <Download size={14} />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => startTrimming(audio)}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+                  >
+                    <Scissors size={14} />
+                    Trim
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleDelete(audio.id);
+                      setActiveMenuId(null);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    ));
+  };
+
   return (
     <div className="flex flex-col h-full">
+      <RenameModal
+        isOpen={isRenameModalOpen}
+        onClose={() => {
+          setIsRenameModalOpen(false);
+          setRenamingAudio(null);
+          setPendingMergeBlob(null);
+        }}
+        onRename={async (newName) => {
+          if (pendingMergeBlob) {
+            await storageService.saveAudio({
+              id: crypto.randomUUID(),
+              title: newName,
+              voice: 'Multi-Voice',
+              style: 'Merged',
+              duration: 0, // Will be calculated on play
+              timestamp: Date.now(),
+              blob: pendingMergeBlob,
+            });
+            setSelectedIds(new Set());
+            loadLibrary();
+            setPendingMergeBlob(null);
+            setIsRenameModalOpen(false);
+          } else if (renamingAudio) {
+            await handleRename(newName);
+          }
+        }}
+        currentName={renamingAudio ? renamingAudio.title : `Merged Recording ${new Date().toLocaleTimeString()}`}
+        itemType={pendingMergeBlob ? 'merged file' : 'recording'}
+      />
       {/* Search Bar & Selection Toggle */}
       <div className="px-4 py-3 border-b border-[var(--color-glass-border)] space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Vault</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Library</h3>
           <button 
             onClick={() => {
               setIsSelectionMode(!isSelectionMode);
@@ -216,170 +400,20 @@ export default function AudioLibrary() {
         </div>
       </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {filteredAudios.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-3 rounded-full bg-[var(--color-bg-hover)] p-4 text-[var(--color-text-secondary)]">
-              <Archive size={24} />
-            </div>
-            <p className="text-sm text-[var(--color-text-secondary)]">No recordings found</p>
+      {/* Lists */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-4">
+        <div>
+          <h4 className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-2">Recordings</h4>
+          <div className="space-y-1">
+            {renderAudioList(filteredAudios)}
           </div>
-        ) : (
-          filteredAudios.map((audio, index) => (
-            <motion.div
-              layout
-              key={audio.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={clsx(
-                "group relative flex items-center gap-3 rounded-lg border border-transparent bg-[var(--color-bg-hover)] p-3 hover:border-[var(--color-glass-border)] hover:bg-[var(--color-bg-hover)]/80 transition-all",
-                selectedIds.has(audio.id) ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/20 shadow-[0_0_15px_rgba(0,255,242,0.1)]" : "hover:translate-x-1"
-              )}
-              onClick={() => isSelectionMode && toggleSelection(audio.id)}
-            >
-              <AnimatePresence>
-                {isSelectionMode && (
-                  <motion.div 
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 'auto', opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    className="flex items-center overflow-hidden"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(audio.id)}
-                      onChange={() => toggleSelection(audio.id)}
-                      className="h-4 w-4 rounded border-gray-700 bg-black/50 text-[var(--color-neon-cyan)] focus:ring-[var(--color-neon-cyan)] cursor-pointer"
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button
-                onClick={(e) => {
-                  if (isSelectionMode) return;
-                  e.stopPropagation();
-                  handlePlay(audio, index);
-                }}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] hover:scale-110 transition-transform"
-              >
-                <Play size={14} fill="currentColor" className="ml-0.5" />
-              </button>
-
-              <div className="flex-1 min-w-0">
-                {editingId === audio.id ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full rounded bg-black/50 px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
-                      autoFocus
-                      onKeyDown={(e) => e.key === 'Enter' && saveTitle(audio.id)}
-                    />
-                    <button onClick={() => saveTitle(audio.id)} className="text-green-400 hover:text-green-300"><Check size={16} /></button>
-                    <button onClick={() => setEditingId(null)} className="text-red-400 hover:text-red-300"><X size={16} /></button>
-                  </div>
-                ) : (
-                  <div>
-                    <h4 className="truncate text-sm font-medium text-[var(--color-text-primary)]">{audio.title}</h4>
-                    <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
-                      <span>{audio.voice}</span>
-                      <span>•</span>
-                      <span>{new Date(audio.timestamp).toLocaleDateString()}</span>
-                    </div>
-                    {trimmingId === audio.id && (
-                      <div className="flex items-center gap-2 mt-2 bg-[var(--color-bg-surface)] p-2 rounded animate-in fade-in slide-in-from-top-2">
-                        <span className="text-xs text-[var(--color-text-secondary)]">Start:</span>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={trimStart}
-                          onChange={(e) => setTrimStart(e.target.value)}
-                          className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
-                        />
-                        <span className="text-xs text-[var(--color-text-secondary)]">End:</span>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={trimEnd}
-                          onChange={(e) => setTrimEnd(e.target.value)}
-                          className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
-                        />
-                        <button onClick={() => handleTrim(audio.id)} className="text-green-400 hover:text-green-300 p-1"><Check size={14} /></button>
-                        <button onClick={() => setTrimmingId(null)} className="text-red-400 hover:text-red-300 p-1"><X size={14} /></button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 3-Dot Menu */}
-              <div className="relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveMenuId(activeMenuId === audio.id ? null : audio.id);
-                  }}
-                  className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-md hover:bg-[var(--color-bg-hover)]"
-                >
-                  <MoreVertical size={16} />
-                </button>
-
-                <AnimatePresence>
-                  {activeMenuId === audio.id && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 5 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                      className="absolute right-0 top-full z-50 mt-1 w-32 overflow-hidden rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-cyber-black)] shadow-xl"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex flex-col p-1.5">
-                        <button
-                          onClick={() => startEditing(audio)}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-                        >
-                          <Edit2 size={14} />
-                          Rename
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleDownload(audio);
-                            setActiveMenuId(null);
-                          }}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-                        >
-                          <Download size={14} />
-                          Download
-                        </button>
-                        <button
-                          onClick={() => startTrimming(audio)}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-                        >
-                          <Scissors size={14} />
-                          Trim
-                        </button>
-                        <div className="my-1.5 h-px bg-[var(--color-bg-hover)]" />
-                        <button
-                          onClick={() => {
-                            handleDelete(audio.id);
-                            setActiveMenuId(null);
-                          }}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10"
-                        >
-                          <Trash2 size={14} />
-                          Delete
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          ))
-        )}
+        </div>
+        <div>
+          <h4 className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-2">Merged Files</h4>
+          <div className="space-y-1">
+            {renderAudioList(filteredMergedAudios, true)}
+          </div>
+        </div>
       </div>
 
       {/* Footer Actions */}

@@ -12,6 +12,9 @@ interface SettingsState {
   selectedVoice: VoiceName;
   setSelectedVoice: (voice: VoiceName) => void;
   
+  voicePitch: number;
+  setVoicePitch: (pitch: number) => void;
+
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
 
@@ -58,6 +61,9 @@ export const useSettingsStore = create<SettingsState>()(
       selectedVoice: 'Kore',
       setSelectedVoice: (voice) => set({ selectedVoice: voice }),
       
+      voicePitch: 0,
+      setVoicePitch: (pitch) => set({ voicePitch: pitch }),
+
       playbackSpeed: 1.0,
       setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
 
@@ -98,7 +104,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({ 
         apiKey: state.apiKey, 
         selectedVoice: state.selectedVoice,
-        playbackSpeed: state.playbackSpeed,
+        voicePitch: state.voicePitch,
         themeMode: state.themeMode,
         accentColor: state.accentColor
       }),

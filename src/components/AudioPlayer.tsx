@@ -151,9 +151,8 @@ export default function AudioPlayer() {
           "lg:w-1/3",
           isExpanded ? "w-full mb-6 justify-center" : "w-full justify-between lg:justify-start"
         )}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
             <button 
-              onClick={() => setIsExpanded(!isExpanded)}
               className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0 relative overflow-hidden group hover:bg-[var(--color-neon-cyan)] hover:text-[var(--color-text-on-accent)] transition-colors"
             >
               <Mic2 size={24} />
@@ -198,7 +197,7 @@ export default function AudioPlayer() {
           {!isExpanded && (
             <button 
               onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]"
+              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-neon-cyan)] text-[var(--color-text-primary)]"
             >
               {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
             </button>
@@ -228,7 +227,7 @@ export default function AudioPlayer() {
             
             <button 
               onClick={togglePlay}
-              className="flex h-14 w-14 lg:h-12 lg:w-12 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] hover:scale-105 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all"
+              className="flex h-14 w-14 lg:h-12 lg:w-12 items-center justify-center rounded-full bg-[var(--color-neon-cyan)] text-[var(--color-text-primary)] hover:scale-105 hover:shadow-[0_0_15px_rgba(var(--color-neon-cyan-rgb),0.4)] transition-all"
             >
               {isPlaying ? (
                 <Pause size={24} fill="currentColor" />
