@@ -123,6 +123,17 @@ export default function AudioPlayer() {
 
   const currentTrack = currentIndex >= 0 ? playlist[currentIndex] : null;
 
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (e: ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    audioEngine.seek(time);
+  };
+
   return (
     <>
       <motion.div
@@ -160,7 +171,7 @@ export default function AudioPlayer() {
 
             {/* Track Info & Visualizer */}
             <div className="flex-shrink-0 w-full text-center mb-4">
-              <h3 className="text-lg font-bold text-white truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)] truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h3>
               <p className="text-sm text-[var(--color-text-secondary)]">{currentTrack ? currentTrack.voice : 'Select Audio'}</p>
               <div className="flex items-end justify-center gap-0.5 h-10 mt-2">
                 {visualizerBars.map((height, i) => (
@@ -186,15 +197,33 @@ export default function AudioPlayer() {
               <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipForward size={24} /></button>
             </div>
 
+            <div className="flex-grow"></div> {/* Spacer */}
+
+            {/* Progress Bar */}
+            <div className="w-full mb-6">
+              <input 
+                type="range" 
+                min="0" 
+                max={currentTrack?.duration || 100}
+                value={progress}
+                onChange={handleSeek}
+                className="w-full accent-[var(--color-neon-cyan)] h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs font-mono text-[var(--color-text-secondary)] mt-1">
+                <span>{formatTime(progress)}</span>
+                <span>{formatTime(currentTrack?.duration || 0)}</span>
+              </div>
+            </div>
+
             {/* Advanced Controls */}
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-4 p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-glass-border)] noise-overlay">
               <div className="flex items-center gap-3">
                 <Music size={16} className="text-[var(--color-text-secondary)]"/>
-                <input type="range" min="0" max="1" step="0.01" value={bgmVolume} onChange={(e) => setBgmVolume(parseFloat(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer" />
+                <input type="range" min="0" max="1" step="0.01" value={bgmVolume} onChange={(e) => setBgmVolume(parseFloat(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer" />
               </div>
               <div className="flex items-center gap-3">
                 <SlidersHorizontal size={16} className="text-[var(--color-text-secondary)]"/>
-                <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(e) => setPitch(parseInt(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer" />
+                <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(e) => setPitch(parseInt(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer" />
               </div>
             </div>
           </motion.div>
@@ -206,11 +235,11 @@ export default function AudioPlayer() {
           <div className="flex items-center justify-between w-full">
             {/* Left: Info */}
             <div className="flex items-center gap-4 cursor-pointer" onClick={() => setIsExpanded(true)}>
-              <div className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0">
+              <div className="h-12 w-12 rounded-lg bg-[var(--color-bg-surface)] flex items-center justify-center text-[var(--color-text-secondary)] border border-[var(--color-glass-border)] shrink-0">
                 <Mic2 size={24} />
               </div>
               <div className="flex flex-col justify-center overflow-hidden">
-                <h4 className="text-sm font-medium text-white truncate">
+                <h4 className="text-sm font-medium text-[var(--color-text-primary)] truncate">
                   {currentTrack ? currentTrack.title : 'Capsule Player'}
                 </h4>
                 <div className="flex items-center gap-2 mt-1">
@@ -223,7 +252,7 @@ export default function AudioPlayer() {
 
             {/* Right: Mini Controls */}
             <div className="flex items-center gap-2">
-              <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="lg:hidden flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-white transition-all active:scale-95">
+              <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="lg:hidden flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-all active:scale-95 shadow-lg">
                 {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
               </button>
             </div>
@@ -238,7 +267,7 @@ export default function AudioPlayer() {
                     <Mic2 size={24} />
                 </div>
                 <div>
-                    <h4 className="font-medium text-white truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h4>
+                    <h4 className="font-medium text-[var(--color-text-primary)] truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h4>
                     <span className="text-xs font-mono text-[var(--color-text-secondary)]">{Math.floor(progress / 60)}:{(progress % 60).toFixed(0).padStart(2, '0')}</span>
                 </div>
             </div>

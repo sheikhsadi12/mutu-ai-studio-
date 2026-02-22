@@ -1,12 +1,17 @@
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import AudioPlayer from './components/AudioPlayer';
-import SettingsModal from './components/SettingsModal';
+import SettingsOverlay from './components/SettingsOverlay';
 import { useSettingsStore } from './store/useSettingsStore';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 
 export default function App() {
-  const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
+  const { apiKey, setSidebarOpen, setActiveSettingsPage } = useSettingsStore();
+
+  const openSettings = () => {
+    setActiveSettingsPage('api');
+    window.history.pushState({ settingsPage: 'api' }, '');
+  };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-[var(--text-on-accent)]">
@@ -26,7 +31,7 @@ export default function App() {
           </div>
 
           <button 
-            onClick={() => setSettingsOpen(true)}
+            onClick={openSettings}
             className="flex items-center gap-3 rounded-full border border-[var(--border-glass)] bg-[var(--bg-surface)] px-4 py-1.5 ml-auto hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
           >
             <span className="hidden sm:inline text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
@@ -54,8 +59,8 @@ export default function App() {
         {/* Bottom Player */}
         <AudioPlayer />
         
-        {/* Modals */}
-        <SettingsModal />
+        {/* Overlays */}
+        <SettingsOverlay />
       </main>
     </div>
   );

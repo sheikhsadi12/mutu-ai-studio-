@@ -18,7 +18,7 @@ export default function AudioLibrary() {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [renamingAudio, setRenamingAudio] = useState<AudioFile | null>(null);
   const [pendingMergeBlob, setPendingMergeBlob] = useState<Blob | null>(null);
-  const { setIsPlaying, setPlaylist, setCurrentIndex } = useSettingsStore();
+  const { setIsPlaying, setPlaylist, setCurrentIndex, setCurrentAudioId } = useSettingsStore();
 
   // Refresh library trigger
   const [refreshKey, setRefreshKey] = useState(0);
@@ -66,11 +66,17 @@ export default function AudioLibrary() {
     }
   };
 
-  const handlePlay = async (audio: AudioFile, index: number) => {
+  const handlePlay = (audio: AudioFile, index: number) => {
+    // 1. Immediate UI update
     setCurrentIndex(index);
-    await audioEngine.loadBlob(audio.blob);
-    audioEngine.play();
+    setCurrentAudioId(audio.id);
     setIsPlaying(true);
+    
+    // 2. Non-blocking load and play
+    audioEngine.loadBlob(audio.blob).catch(error => {
+      console.error("[AudioLibrary] Playback failed:", error);
+      setIsPlaying(false);
+    });
   };
 
   const handleDownload = (audio: AudioFile) => {

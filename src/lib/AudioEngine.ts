@@ -15,6 +15,13 @@ class AudioEngine {
   private schedulerInterval: number | null = null;
   private abortController: AbortController | null = null;
 
+  // For seekable, loaded audio
+  private currentSource: AudioBufferSourceNode | null = null;
+  private fullLoadedBuffer: AudioBuffer | null = null;
+  private playbackStartTime: number = 0;
+  private pausedTime: number = 0;
+  private progressUpdateId: number | null = null;
+
   // Pre-roll threshold in seconds
   private readonly BUFFER_THRESHOLD = 5;
   // Micro-fade time in seconds
@@ -243,16 +250,28 @@ class AudioEngine {
 
   play() {
     if (!this.audioContext) return;
-    this.isPlaying = true;
-    useSettingsStore.getState().setIsPlaying(true);
-    if (this.audioContext.state === 'suspended') this.audioContext.resume();
-    this.startScheduler();
+    
+    if (this.fullLoadedBuffer) { // Logic for loaded file
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        this.playLoadedBuffer(this.pausedTime);
+    } else { // Original logic for streaming
+        this.isPlaying = true;
+        useSettingsStore.getState().setIsPlaying(true);
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        this.startScheduler();
+    }
   }
 
   pause() {
+    if (!this.audioContext) return;
     this.isPlaying = false;
     useSettingsStore.getState().setIsPlaying(false);
-    if (this.audioContext) this.audioContext.suspend();
+    this.audioContext.suspend();
+
+    if (this.fullLoadedBuffer) {
+        this.pausedTime = this.audioContext.currentTime - this.playbackStartTime;
+    }
+    this.stopProgressUpdater();
   }
 
   stop() {
@@ -262,6 +281,16 @@ class AudioEngine {
     this.chunkQueue = [];
     this.totalDurationScheduled = 0;
     this.abortController?.abort();
+    this.stopProgressUpdater();
+
+    if (this.currentSource) {
+      this.currentSource.onended = null;
+      try { this.currentSource.stop(); } catch(e) {}
+      this.currentSource = null;
+    }
+    this.fullLoadedBuffer = null;
+    this.pausedTime = 0;
+    this.playbackStartTime = 0;
     
     if (this.schedulerInterval) {
       window.clearInterval(this.schedulerInterval);
@@ -293,36 +322,41 @@ class AudioEngine {
   }
 
   async loadBlob(blob: Blob): Promise<void> {
-    this.stop();
+    // 1. Immediate UI Feedback
+    const state = useSettingsStore.getState();
+    state.setIsBuffering(true);
+    state.setIsPlaying(true);
+
+    // 2. Clean up previous playback surgically
+    if (this.currentSource) {
+      this.currentSource.onended = null;
+      try { this.currentSource.stop(); } catch(e) {}
+      this.currentSource = null;
+    }
+    this.stopProgressUpdater();
+    this.pausedTime = 0;
+    this.playbackStartTime = 0;
+
+    // 3. Load and Decode
     this.initAudioContext();
     const arrayBuffer = await blob.arrayBuffer();
     try {
-      const buffer = await this.audioContext!.decodeAudioData(arrayBuffer.slice(0));
-      this.chunkQueue = [buffer];
+      const buffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+      this.fullLoadedBuffer = buffer;
       this.isStreamFinished = true;
-      this.stopBuffering();
-      this.play();
-    } catch (error) {
-      console.error("Unable to decode audio data, trying raw PCM fallback", error);
-      try {
-        // Ensure even length for Int16Array
-        const evenLength = arrayBuffer.byteLength - (arrayBuffer.byteLength % 2);
-        if (evenLength < 2) throw new Error("Buffer too small for PCM16");
-        
-        const pcm16 = new Int16Array(arrayBuffer, 0, evenLength / 2);
-        const buffer = this.audioContext!.createBuffer(1, pcm16.length, 24000);
-        const channelData = buffer.getChannelData(0);
-        for (let i = 0; i < pcm16.length; i++) {
-          channelData[i] = pcm16[i] / 32768.0;
-        }
-        this.chunkQueue = [buffer];
-        this.isStreamFinished = true;
-        this.stopBuffering();
-        this.play();
-      } catch (fallbackError) {
-        console.error("Fallback PCM decode also failed", fallbackError);
-        throw new Error("Unable to decode audio data");
+
+      // Update duration in playlist
+      const { playlist, currentIndex } = useSettingsStore.getState();
+      if (playlist[currentIndex]) {
+        playlist[currentIndex].duration = buffer.duration;
+        useSettingsStore.getState().setPlaylist([...playlist]);
       }
+
+      this.stopBuffering();
+      this.playLoadedBuffer(0);
+    } catch (error) {
+      console.error("[AudioEngine] Playback failed:", error);
+      this.stop();
     }
   }
 
@@ -539,6 +573,70 @@ class AudioEngine {
     view.setUint32(40, dataLength, true);
     return header;
   }
+
+  seek(time: number) {
+    if (this.fullLoadedBuffer) {
+      this.pausedTime = time;
+      if (this.isPlaying) {
+        this.playLoadedBuffer(time);
+      }
+      // Also update progress immediately for responsiveness
+      useSettingsStore.getState().setProgress(time);
+    }
+  }
+
+  private playLoadedBuffer(startTime: number = 0) {
+    if (!this.audioContext || !this.fullLoadedBuffer) return;
+
+    if (this.currentSource) {
+      this.currentSource.onended = null;
+      try { this.currentSource.stop(); } catch(e) {}
+    }
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = this.fullLoadedBuffer;
+    source.connect(this.gainNode!);
+    source.start(0, startTime);
+    
+    source.onended = () => {
+      if (this.audioContext && this.fullLoadedBuffer && this.audioContext.currentTime >= this.playbackStartTime + this.fullLoadedBuffer.duration - 0.1) {
+        this.stop();
+      }
+    };
+
+    this.currentSource = source;
+    this.playbackStartTime = this.audioContext.currentTime - startTime;
+    this.isPlaying = true;
+    useSettingsStore.getState().setIsPlaying(true);
+
+    this.startProgressUpdater();
+  }
+
+  private startProgressUpdater() {
+    this.stopProgressUpdater();
+    const update = () => {
+      if (!this.isPlaying || !this.audioContext || !this.fullLoadedBuffer) {
+        this.stopProgressUpdater();
+        return;
+      }
+      const elapsed = this.audioContext.currentTime - this.playbackStartTime;
+      if (elapsed < this.fullLoadedBuffer.duration) {
+        useSettingsStore.getState().setProgress(elapsed);
+        this.progressUpdateId = requestAnimationFrame(update);
+      } else {
+        useSettingsStore.getState().setProgress(this.fullLoadedBuffer.duration);
+        this.stop();
+      }
+    };
+    this.progressUpdateId = requestAnimationFrame(update);
+  }
+
+  private stopProgressUpdater() {
+    if (this.progressUpdateId) {
+      cancelAnimationFrame(this.progressUpdateId);
+      this.progressUpdateId = null;
+    }
+    }
 }
 
 export const audioEngine = new AudioEngine();

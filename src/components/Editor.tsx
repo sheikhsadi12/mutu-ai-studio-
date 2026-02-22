@@ -37,18 +37,6 @@ export default function Editor() {
 
   return (
     <div className="flex h-full flex-col gap-6 p-4 lg:p-8 overflow-y-auto pb-32">
-      {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between">
-        <button 
-          onClick={() => setSidebarOpen(true)}
-          className="p-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-        >
-          <Menu size={24} />
-        </button>
-        <div className="font-bold text-[var(--color-neon-cyan)]">
-          MUTU AUDIO
-        </div>
-      </div>
       <Toast ref={toastRef} />
       
       {/* Style Instructions */}
@@ -62,7 +50,7 @@ export default function Editor() {
             type="text"
             value={styleInstruction}
             onChange={(e) => setStyleInstruction(e.target.value)}
-            placeholder="E.g., Speak like a news anchor, Expressive storyteller, খুব দ্রুত বলো..."
+            placeholder="E.g. Speak like a news anchor Express..."
             className="w-full rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] transition-all focus:border-[var(--color-neon-cyan)] focus:bg-[var(--color-bg-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
           />
           <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-[var(--color-neon-cyan)] to-purple-600 opacity-0 blur transition-opacity duration-500 group-focus-within:opacity-20" />
@@ -110,7 +98,7 @@ export default function Editor() {
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="flex items-center gap-2 rounded-xl bg-[var(--color-neon-cyan)] px-4 py-2 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-cyan)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shimmer-button"
+                className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 font-bold text-black transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shimmer-button"
               >
                 {isGenerating ? (
                   <>

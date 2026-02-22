@@ -33,6 +33,9 @@ interface SettingsState {
   isSettingsOpen: boolean;
   setSettingsOpen: (isOpen: boolean) => void;
 
+  activeSettingsPage: 'api' | 'appearance' | 'model' | null;
+  setActiveSettingsPage: (page: 'api' | 'appearance' | 'model' | null) => void;
+
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
 
@@ -81,6 +84,9 @@ export const useSettingsStore = create<SettingsState>()(
 
       isSettingsOpen: false,
       setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
+
+      activeSettingsPage: null,
+      setActiveSettingsPage: (page) => set({ activeSettingsPage: page }),
 
       isSidebarOpen: false,
       setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
