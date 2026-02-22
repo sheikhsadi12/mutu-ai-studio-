@@ -1,7 +1,7 @@
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import AudioPlayer from './components/AudioPlayer';
-import SettingsModal from './components/SettingsModal';
+import SettingsOverlay from './components/SettingsOverlay';
 import { useSettingsStore } from './store/useSettingsStore';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 
@@ -55,7 +55,7 @@ export default function App() {
         <AudioPlayer />
         
         {/* Modals */}
-        <SettingsModal />
+        <SettingsOverlay />
       </main>
     </div>
   );

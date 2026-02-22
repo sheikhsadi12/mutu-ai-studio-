@@ -52,6 +52,9 @@ interface SettingsState {
   setPlaylist: (list: AudioFile[]) => void;
   currentIndex: number;
   setCurrentIndex: (index: number) => void;
+
+  clonedVoiceData: string | null;
+  setClonedVoiceData: (data: string | null) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -104,6 +107,9 @@ export const useSettingsStore = create<SettingsState>()(
       setPlaylist: (playlist) => set({ playlist }),
       currentIndex: -1,
       setCurrentIndex: (currentIndex) => set({ currentIndex }),
+
+      clonedVoiceData: null,
+      setClonedVoiceData: (data) => set({ clonedVoiceData: data }),
     }),
     {
       name: 'mutu-settings-storage',
@@ -112,7 +118,8 @@ export const useSettingsStore = create<SettingsState>()(
         selectedVoice: state.selectedVoice,
         voicePitch: state.voicePitch,
         themeMode: state.themeMode,
-        accentColor: state.accentColor
+        accentColor: state.accentColor,
+        clonedVoiceData: state.clonedVoiceData
       }),
     }
   )

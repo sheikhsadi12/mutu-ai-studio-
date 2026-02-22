@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, ChangeEvent } from 'react';
 import { motion } from 'motion/react';
-import { Type, Trash2, Sparkles, Zap, Loader2, Menu } from 'lucide-react';
+import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X } from 'lucide-react';
 import clsx from 'clsx';
 import VoiceSelector from './VoiceSelector';
 import { audioEngine } from '../lib/AudioEngine';
@@ -10,12 +10,31 @@ import Toast, { ToastRef } from './Toast';
 export default function Editor() {
   const [text, setText] = useState('');
   const [styleInstruction, setStyleInstruction] = useState('');
-  const { isGenerating, apiKey, setSidebarOpen } = useSettingsStore();
+  const { isGenerating, apiKey, setSidebarOpen, clonedVoiceData, setClonedVoiceData } = useSettingsStore();
   const toastRef = useRef<ToastRef>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClear = () => {
     setText('');
     setStyleInstruction('');
+  };
+
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('audio/')) {
+      toastRef.current?.show("Please upload an audio file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setClonedVoiceData(base64);
+      toastRef.current?.show("Voice sample uploaded successfully.");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGenerate = async () => {
@@ -40,20 +59,77 @@ export default function Editor() {
       <Toast ref={toastRef} />
       
       {/* Style Instructions */}
-      <div className="space-y-1.5">
-        <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
-          <Sparkles size={12} />
-          <span>Style Instructions</span>
-        </label>
-        <div className="relative group">
-          <input
-            type="text"
-            value={styleInstruction}
-            onChange={(e) => setStyleInstruction(e.target.value)}
-            placeholder="E.g., Speak like a news anchor, Expressive storyteller, খুব দ্রুত বলো..."
-            className="w-full rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] transition-all focus:border-[var(--color-neon-cyan)] focus:bg-[var(--color-bg-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
-          />
-          <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-[var(--color-neon-cyan)] to-purple-600 opacity-0 blur transition-opacity duration-500 group-focus-within:opacity-20" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
+            <Sparkles size={12} />
+            <span>Style Instructions</span>
+          </label>
+          <div className="relative group">
+            <input
+              type="text"
+              value={styleInstruction}
+              onChange={(e) => setStyleInstruction(e.target.value)}
+              placeholder="E.g., Speak like a news anchor..."
+              className="w-full rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] transition-all focus:border-[var(--color-neon-cyan)] focus:bg-[var(--color-bg-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
+            <Mic size={12} />
+            <span>AI Voice Cloning</span>
+          </label>
+          <div className="relative group">
+            <div className={clsx(
+              "flex items-center justify-between w-full rounded-xl border px-4 py-2.5 transition-all",
+              clonedVoiceData ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/10" : "border-[var(--color-glass-border)] bg-[var(--color-bg-hover)]"
+            )}>
+              <div className="flex items-center gap-3 overflow-hidden">
+                {clonedVoiceData ? (
+                  <>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-neon-cyan)] text-[var(--color-text-on-accent)]">
+                      <Mic size={14} />
+                    </div>
+                    <span className="truncate text-xs font-medium text-[var(--color-text-primary)]">Voice Sample Active</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)]">
+                      <Upload size={14} />
+                    </div>
+                    <span className="text-xs text-[var(--color-text-secondary)]">Upload voice sample (MP3/WAV)</span>
+                  </>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-1">
+                {clonedVoiceData ? (
+                  <button 
+                    onClick={() => setClonedVoiceData(null)}
+                    className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg bg-[var(--color-neon-cyan)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-on-accent)] hover:scale-105 transition-all"
+                  >
+                    Upload
+                  </button>
+                )}
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                accept="audio/*" 
+                className="hidden" 
+              />
+            </div>
+          </div>
         </div>
       </div>
 

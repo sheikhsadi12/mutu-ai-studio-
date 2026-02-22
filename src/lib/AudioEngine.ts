@@ -5,6 +5,7 @@ import { storageService } from './StorageService';
 class AudioEngine {
   private audioContext: AudioContext | null = null;
   private gainNode: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
   private chunkQueue: AudioBuffer[] = [];
   private accumulatedBytes: Uint8Array[] = [];
   private nextStartTime: number = 0;
@@ -35,7 +36,11 @@ class AudioEngine {
         sampleRate: 24000
       });
       this.gainNode = this.audioContext.createGain();
-      this.gainNode.connect(this.audioContext.destination);
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 256;
+      
+      this.gainNode.connect(this.analyserNode);
+      this.analyserNode.connect(this.audioContext.destination);
     }
     if (this.audioContext.state === 'suspended') {
       this.audioContext.resume().catch(console.error);
@@ -43,7 +48,7 @@ class AudioEngine {
   }
 
   async generateAudio(text: string, styleInstruction: string): Promise<void> {
-    const { apiKey, selectedVoice, voicePitch, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
+    const { apiKey, selectedVoice, voicePitch, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
 
@@ -68,22 +73,47 @@ class AudioEngine {
 
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
-      const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${text}\"</prosody></speak>`;
       
       const generateStream = async () => {
-        return await ai.models.generateContentStream({
-          model: "gemini-2.5-flash-preview-tts",
-          contents: [{ parts: [{ text: prompt }] }],
-          config: {
-            responseModalities: [Modality.AUDIO],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: selectedVoice },
+        if (clonedVoiceData) {
+          // Voice Cloning Mode using gemini-2.5-flash
+          const audioPart = {
+            inlineData: {
+              mimeType: "audio/mp3",
+              data: clonedVoiceData.split(',')[1] || clonedVoiceData,
+            },
+          };
+          const textPart = {
+            text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
+                  Style: ${styleInstruction || 'Natural and clear'}. 
+                  Text: "${text}"`,
+          };
+          
+          return await ai.models.generateContentStream({
+            model: "gemini-2.5-flash",
+            contents: [{ parts: [audioPart, textPart] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+            },
+          });
+        } else {
+          // Standard TTS Mode
+          const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
+          const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${text}\"</prosody></speak>`;
+          
+          return await ai.models.generateContentStream({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: selectedVoice },
+                },
               },
             },
-          },
-        });
+          });
+        }
       };
 
       const stream = await this.retry(generateStream);
@@ -639,7 +669,17 @@ class AudioEngine {
       cancelAnimationFrame(this.progressUpdateId);
       this.progressUpdateId = null;
     }
+  }
+
+  getFrequencyData(array: Uint8Array) {
+    if (this.analyserNode) {
+      this.analyserNode.getByteFrequencyData(array);
     }
+  }
+
+  getAnalyser() {
+    return this.analyserNode;
+  }
 }
 
 export const audioEngine = new AudioEngine();

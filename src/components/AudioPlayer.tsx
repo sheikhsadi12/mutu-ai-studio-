@@ -6,13 +6,13 @@ import { useEffect, useState, ChangeEvent } from 'react';
 import { storageService } from '../lib/StorageService';
 import { saveAs } from 'file-saver';
 import clsx from 'clsx';
+import AudioVisualizer from './AudioVisualizer';
 
 export default function AudioPlayer() {
   const { 
     isPlaying, isBuffering, progress, playbackSpeed, setPlaybackSpeed, 
     selectedVoice, currentAudioId, playlist, currentIndex, setCurrentIndex, setIsPlaying 
   } = useSettingsStore();
-  const [visualizerBars, setVisualizerBars] = useState<number[]>(new Array(20).fill(10));
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false); // Track if current audio is already saved
   const [isExpanded, setIsExpanded] = useState(false); // For mobile expansion
@@ -23,19 +23,6 @@ export default function AudioPlayer() {
   useEffect(() => {
     setIsSaved(false);
   }, [currentAudioId]);
-
-  // Simple visualizer effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setVisualizerBars(prev => prev.map(() => Math.random() * 80 + 10));
-      }, 100);
-    } else {
-      setVisualizerBars(new Array(20).fill(5));
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -172,19 +159,9 @@ export default function AudioPlayer() {
             {/* Track Info & Visualizer */}
             <div className="flex-shrink-0 w-full text-center mb-4">
               <h3 className="text-lg font-bold text-[var(--color-text-primary)] truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">{currentTrack ? currentTrack.voice : 'Select Audio'}</p>
-              <div className="flex items-end justify-center gap-0.5 h-10 mt-2">
-                {visualizerBars.map((height, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ height: isBuffering ? '20%' : `${height}%` }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className={clsx(
-                      "w-1.5 rounded-t-sm opacity-60",
-                      isBuffering ? "bg-gray-600" : "bg-gradient-to-t from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)]"
-                    )}
-                  />
-                ))}
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">{currentTrack ? currentTrack.voice : 'Select Audio'}</p>
+              <div className="flex items-center justify-center h-12 w-full">
+                <AudioVisualizer className="w-full max-w-[300px]" />
               </div>
             </div>
 
@@ -273,12 +250,15 @@ export default function AudioPlayer() {
             </div>
 
             {/* Center Controls */}
-            <div className="flex items-center gap-6 justify-center w-1/3">
-                <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipBack size={20} /></button>
-                <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-[var(--color-text-on-accent)] shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
-                    {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
-                </button>
-                <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipForward size={20} /></button>
+            <div className="flex flex-col items-center gap-2 w-1/3">
+                <div className="flex items-center gap-6 justify-center">
+                    <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipBack size={20} /></button>
+                    <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-[var(--color-text-on-accent)] shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
+                        {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
+                    </button>
+                    <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all active:scale-95"><SkipForward size={20} /></button>
+                </div>
+                <AudioVisualizer className="w-48 h-4 opacity-50" />
             </div>
 
             {/* Right Controls */}
