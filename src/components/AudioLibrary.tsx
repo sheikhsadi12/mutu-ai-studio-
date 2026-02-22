@@ -190,7 +190,7 @@ export default function AudioLibrary() {
       {/* Search Bar & Selection Toggle */}
       <div className="px-4 py-3 border-b border-[var(--color-glass-border)] space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Vault</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Vault</h3>
           <button 
             onClick={() => {
               setIsSelectionMode(!isSelectionMode);
@@ -198,20 +198,20 @@ export default function AudioLibrary() {
             }}
             className={clsx(
               "text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded transition-colors",
-              isSelectionMode ? "bg-[var(--color-neon-cyan)] text-black" : "text-gray-500 hover:text-white border border-white/10"
+              isSelectionMode ? "bg-[var(--color-neon-cyan)] text-[var(--color-text-on-accent)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-glass-border)]"
             )}
           >
             {isSelectionMode ? 'Cancel' : 'Select'}
           </button>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--color-text-secondary)]" />
           <input
             type="text"
             placeholder="Search recordings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-[var(--color-glass-border)] bg-white/5 py-2 pl-9 pr-4 text-sm text-[var(--color-text-primary)] placeholder-gray-500 focus:border-[var(--color-neon-cyan)] focus:outline-none"
+            className="w-full rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] py-2 pl-9 pr-4 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none"
           />
         </div>
       </div>
@@ -220,10 +220,10 @@ export default function AudioLibrary() {
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {filteredAudios.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-3 rounded-full bg-white/5 p-4 text-gray-600">
+            <div className="mb-3 rounded-full bg-[var(--color-bg-hover)] p-4 text-[var(--color-text-secondary)]">
               <Archive size={24} />
             </div>
-            <p className="text-sm text-gray-500">No recordings found</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">No recordings found</p>
           </div>
         ) : (
           filteredAudios.map((audio, index) => (
@@ -233,7 +233,7 @@ export default function AudioLibrary() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={clsx(
-                "group relative flex items-center gap-3 rounded-lg border border-transparent bg-white/5 p-3 hover:border-[var(--color-glass-border)] hover:bg-white/10 transition-all",
+                "group relative flex items-center gap-3 rounded-lg border border-transparent bg-[var(--color-bg-hover)] p-3 hover:border-[var(--color-glass-border)] hover:bg-[var(--color-bg-hover)]/80 transition-all",
                 selectedIds.has(audio.id) ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/20 shadow-[0_0_15px_rgba(0,255,242,0.1)]" : "hover:translate-x-1"
               )}
               onClick={() => isSelectionMode && toggleSelection(audio.id)}
@@ -290,22 +290,22 @@ export default function AudioLibrary() {
                       <span>{new Date(audio.timestamp).toLocaleDateString()}</span>
                     </div>
                     {trimmingId === audio.id && (
-                      <div className="flex items-center gap-2 mt-2 bg-black/50 p-2 rounded animate-in fade-in slide-in-from-top-2">
-                        <span className="text-xs text-gray-400">Start:</span>
+                      <div className="flex items-center gap-2 mt-2 bg-[var(--color-bg-surface)] p-2 rounded animate-in fade-in slide-in-from-top-2">
+                        <span className="text-xs text-[var(--color-text-secondary)]">Start:</span>
                         <input
                           type="number"
                           step="0.1"
                           value={trimStart}
                           onChange={(e) => setTrimStart(e.target.value)}
-                          className="w-16 rounded bg-white/10 px-1 py-0.5 text-xs text-white focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+                          className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
                         />
-                        <span className="text-xs text-gray-400">End:</span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">End:</span>
                         <input
                           type="number"
                           step="0.1"
                           value={trimEnd}
                           onChange={(e) => setTrimEnd(e.target.value)}
-                          className="w-16 rounded bg-white/10 px-1 py-0.5 text-xs text-white focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+                          className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
                         />
                         <button onClick={() => handleTrim(audio.id)} className="text-green-400 hover:text-green-300 p-1"><Check size={14} /></button>
                         <button onClick={() => setTrimmingId(null)} className="text-red-400 hover:text-red-300 p-1"><X size={14} /></button>
@@ -322,7 +322,7 @@ export default function AudioLibrary() {
                     e.stopPropagation();
                     setActiveMenuId(activeMenuId === audio.id ? null : audio.id);
                   }}
-                  className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10"
+                  className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-md hover:bg-[var(--color-bg-hover)]"
                 >
                   <MoreVertical size={16} />
                 </button>
@@ -339,7 +339,7 @@ export default function AudioLibrary() {
                       <div className="flex flex-col p-1.5">
                         <button
                           onClick={() => startEditing(audio)}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-white/10"
+                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                         >
                           <Edit2 size={14} />
                           Rename
@@ -349,19 +349,19 @@ export default function AudioLibrary() {
                             handleDownload(audio);
                             setActiveMenuId(null);
                           }}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-white/10"
+                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                         >
                           <Download size={14} />
                           Download
                         </button>
                         <button
                           onClick={() => startTrimming(audio)}
-                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-white/10"
+                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                         >
                           <Scissors size={14} />
                           Trim
                         </button>
-                        <div className="my-1.5 h-px bg-white/10" />
+                        <div className="my-1.5 h-px bg-[var(--color-bg-hover)]" />
                         <button
                           onClick={() => {
                             handleDelete(audio.id);
@@ -387,8 +387,8 @@ export default function AudioLibrary() {
         <div className="p-4 border-t border-[var(--color-glass-border)] space-y-2">
           {selectedIds.size >= 2 && (
             <div className="space-y-2">
-                <div className="flex items-center justify-center gap-4 text-[10px] text-gray-400 bg-white/5 py-1 rounded-lg">
-                    <label className="flex items-center gap-1 cursor-pointer hover:text-white">
+                <div className="flex items-center justify-center gap-4 text-[10px] text-[var(--color-text-secondary)] bg-[var(--color-bg-hover)] py-1 rounded-lg">
+                    <label className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-text-primary)]">
                         <input 
                             type="radio" 
                             name="transition" 
@@ -397,7 +397,7 @@ export default function AudioLibrary() {
                             className="accent-[var(--color-neon-cyan)]"
                         /> Gap (0.5s)
                     </label>
-                    <label className="flex items-center gap-1 cursor-pointer hover:text-white">
+                    <label className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-text-primary)]">
                         <input 
                             type="radio" 
                             name="transition" 
@@ -410,7 +410,7 @@ export default function AudioLibrary() {
                 <button
                 onClick={handleMerge}
                 disabled={isMerging}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-neon-cyan)] py-2 text-xs font-bold text-black hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_15px_var(--color-neon-cyan-dim)]"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-neon-cyan)] py-2 text-xs font-bold text-[var(--color-text-on-accent)] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_15px_var(--color-neon-cyan-dim)]"
                 >
                 {isMerging ? 'MERGING...' : `MERGE SELECTED (${selectedIds.size})`}
                 </button>
@@ -418,7 +418,7 @@ export default function AudioLibrary() {
           )}
           <button
             onClick={handleDownloadSelected}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-glass-border)] bg-white/5 py-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-white/10 transition-colors"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] py-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]/80 transition-colors"
           >
             <Archive size={14} />
             {selectedIds.size > 0 ? `Download Selected (${selectedIds.size})` : 'Download All (ZIP)'}

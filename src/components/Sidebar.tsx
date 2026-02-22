@@ -29,7 +29,7 @@ export default function Sidebar() {
         {/* Mobile Close Button */}
         <button 
           onClick={() => setSidebarOpen(false)}
-          className="lg:hidden text-gray-400 hover:text-white"
+          className="lg:hidden text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
         >
           <X size={20} />
         </button>
@@ -45,16 +45,16 @@ export default function Sidebar() {
             setSettingsOpen(true);
             setSidebarOpen(false); // Close sidebar on mobile when settings clicked
           }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           <Settings size={16} />
           Settings
         </button>
         
         <div className="mt-2 px-3 text-center">
-          <p className="text-[10px] font-medium text-gray-600 uppercase tracking-[0.2em] leading-relaxed">
+          <p className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-[0.2em] leading-relaxed">
             This app created by <br />
-            <span className="text-gray-400 font-bold">Sheikh Sadi</span>
+            <span className="text-[var(--color-text-primary)] font-bold">Sheikh Sadi</span>
           </p>
         </div>
       </div>

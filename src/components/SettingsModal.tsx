@@ -111,7 +111,7 @@ export default function SettingsModal() {
             className="flex h-[600px] w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-cyber-black)] shadow-2xl shadow-[var(--color-neon-cyan-dim)]"
           >
             {/* Sidebar Navigation */}
-            <div className="w-64 border-r border-[var(--color-glass-border)] bg-black/20 p-6 hidden md:block">
+            <div className="w-64 border-r border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]/50 p-6 hidden md:block">
               <div className="mb-8 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)]">
                   <Settings size={18} />
@@ -126,7 +126,7 @@ export default function SettingsModal() {
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     activeTab === 'api' 
                       ? "bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)]" 
-                      : "text-[var(--color-text-secondary)] hover:bg-white/5 hover:text-[var(--color-text-primary)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
                   )}
                 >
                   <Key size={16} />
@@ -138,7 +138,7 @@ export default function SettingsModal() {
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     activeTab === 'appearance' 
                       ? "bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)]" 
-                      : "text-[var(--color-text-secondary)] hover:bg-white/5 hover:text-[var(--color-text-primary)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
                   )}
                 >
                   <Palette size={16} />
@@ -150,7 +150,7 @@ export default function SettingsModal() {
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     activeTab === 'ai' 
                       ? "bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)]" 
-                      : "text-[var(--color-text-secondary)] hover:bg-white/5 hover:text-[var(--color-text-primary)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
                   )}
                 >
                   <Cpu size={16} />
@@ -161,9 +161,9 @@ export default function SettingsModal() {
 
             {/* Mobile Nav (Top) */}
             <div className="md:hidden absolute top-0 left-0 right-0 h-16 border-b border-[var(--color-glass-border)] bg-[var(--color-cyber-black)] flex items-center px-4 gap-4 overflow-x-auto z-10">
-               <button onClick={() => setActiveTab('api')} className={clsx("whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium", activeTab === 'api' ? "bg-[var(--color-neon-cyan)] text-black" : "text-gray-400")}>API Config</button>
-               <button onClick={() => setActiveTab('appearance')} className={clsx("whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium", activeTab === 'appearance' ? "bg-[var(--color-neon-cyan)] text-black" : "text-gray-400")}>Appearance</button>
-               <button onClick={() => setActiveTab('ai')} className={clsx("whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium", activeTab === 'ai' ? "bg-[var(--color-neon-cyan)] text-black" : "text-gray-400")}>AI Model</button>
+               <button onClick={() => setActiveTab('api')} className={clsx("whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium", activeTab === 'api' ? "bg-[var(--color-neon-cyan)] text-[var(--color-text-on-accent)]" : "text-[var(--color-text-secondary)]")}>API Config</button>
+               <button onClick={() => setActiveTab('appearance')} className={clsx("whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium", activeTab === 'appearance' ? "bg-[var(--color-neon-cyan)] text-[var(--color-text-on-accent)]" : "text-[var(--color-text-secondary)]")}>Appearance</button>
+               <button onClick={() => setActiveTab('ai')} className={clsx("whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium", activeTab === 'ai' ? "bg-[var(--color-neon-cyan)] text-[var(--color-text-on-accent)]" : "text-[var(--color-text-secondary)]")}>AI Model</button>
             </div>
 
             {/* Content Area */}
@@ -174,9 +174,9 @@ export default function SettingsModal() {
                   {activeTab === 'api' ? 'API Configuration' : activeTab}
                 </h3>
                 {apiKey && (
-                  <button
+                    <button
                     onClick={handleClose}
-                    className="rounded-full p-2 text-[var(--color-text-secondary)] hover:bg-white/5 hover:text-[var(--color-text-primary)]"
+                    className="rounded-full p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
                   >
                     <X size={20} />
                   </button>
@@ -200,9 +200,9 @@ export default function SettingsModal() {
                           value={inputValue}
                           onChange={(e) => setInputValue(e.target.value)}
                           placeholder="Enter your Gemini API Key"
-                          className="w-full rounded-xl border border-[var(--color-glass-border)] bg-white/5 px-4 py-3 pl-11 text-[var(--color-text-primary)] placeholder-gray-500 focus:border-[var(--color-neon-cyan)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+                          className="w-full rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 pl-11 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
                         />
-                        <ShieldCheck className="absolute left-3 top-3.5 h-5 w-5 text-gray-500" />
+                        <ShieldCheck className="absolute left-3 top-3.5 h-5 w-5 text-[var(--color-text-secondary)]" />
                       </div>
 
                       {error && (
@@ -225,7 +225,7 @@ export default function SettingsModal() {
                         </button>
                         <button
                           type="submit"
-                          className="flex-[2] rounded-xl bg-[var(--color-neon-cyan)] px-4 py-3 font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                          className="flex-[2] rounded-xl bg-[var(--color-neon-cyan)] px-4 py-3 font-medium text-[var(--color-text-on-accent)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
                         >
                           Save Configuration
                         </button>
@@ -292,11 +292,11 @@ export default function SettingsModal() {
                           className={clsx(
                             "flex items-center justify-center gap-2 rounded-xl border p-3 transition-all",
                             showAllColors 
-                              ? "border-[var(--color-neon-cyan)] bg-white/10" 
-                              : "border-[var(--color-glass-border)] bg-white/5 hover:bg-white/10"
+                              ? "border-[var(--color-neon-cyan)] bg-[var(--color-bg-hover)]" 
+                              : "border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)]/80"
                           )}
                         >
-                          <Palette size={18} className={showAllColors ? "text-[var(--color-neon-cyan)]" : "text-gray-400"} />
+                          <Palette size={18} className={showAllColors ? "text-[var(--color-neon-cyan)]" : "text-[var(--color-text-secondary)]"} />
                           <span className="font-bold text-xs uppercase tracking-widest">More Colors</span>
                         </button>
                       </div>
@@ -310,7 +310,7 @@ export default function SettingsModal() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden mt-4"
                           >
-                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 p-4 rounded-2xl border border-[var(--color-glass-border)] bg-black/40 backdrop-blur-md">
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 p-4 rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] backdrop-blur-md">
                               {ACCENT_COLORS.map((color) => (
                                 <button
                                   key={color.value}

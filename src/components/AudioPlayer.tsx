@@ -138,7 +138,7 @@ export default function AudioPlayer() {
         {/* Mobile Expanded Header */}
         {isExpanded && (
           <div className="lg:hidden w-full flex justify-center mb-6" onClick={() => setIsExpanded(false)}>
-             <div className="flex items-center gap-1 text-gray-500">
+             <div className="flex items-center gap-1 text-[var(--color-text-secondary)]">
                 <ChevronDown size={16} />
                 <span className="text-xs uppercase tracking-widest">Collapse</span>
              </div>
@@ -154,7 +154,7 @@ export default function AudioPlayer() {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0 relative overflow-hidden group hover:bg-[var(--color-neon-cyan)] hover:text-black transition-colors"
+              className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0 relative overflow-hidden group hover:bg-[var(--color-neon-cyan)] hover:text-[var(--color-text-on-accent)] transition-colors"
             >
               <Mic2 size={24} />
             </button>
@@ -174,7 +174,7 @@ export default function AudioPlayer() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] font-mono text-gray-500">
+                <span className="text-[10px] font-mono text-[var(--color-text-secondary)]">
                   {Math.floor(progress / 60)}:{(progress % 60).toFixed(0).padStart(2, '0')}
                 </span>
                 <div className="flex items-end gap-0.5 h-4">
@@ -198,7 +198,7 @@ export default function AudioPlayer() {
           {!isExpanded && (
             <button 
               onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full bg-white text-black"
+              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]"
             >
               {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
             </button>
@@ -214,21 +214,21 @@ export default function AudioPlayer() {
           <div className="flex items-center gap-6 lg:gap-6 justify-center w-full">
             <button 
               onClick={handleStop}
-              className="text-gray-400 hover:text-red-400 transition-colors p-2"
+              className="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors p-2"
             >
               <Square size={18} fill="currentColor" />
             </button>
             
             <button 
               onClick={handlePrevious}
-              className="text-gray-400 hover:text-white transition-colors p-2"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
             >
               <SkipBack size={20} />
             </button>
             
             <button 
               onClick={togglePlay}
-              className="flex h-14 w-14 lg:h-12 lg:w-12 items-center justify-center rounded-full bg-white text-black hover:scale-105 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all"
+              className="flex h-14 w-14 lg:h-12 lg:w-12 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] hover:scale-105 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all"
             >
               {isPlaying ? (
                 <Pause size={24} fill="currentColor" />
@@ -239,7 +239,7 @@ export default function AudioPlayer() {
             
             <button 
               onClick={handleNext}
-              className="text-gray-400 hover:text-white transition-colors p-2"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
             >
               <SkipForward size={20} />
             </button>
@@ -249,7 +249,7 @@ export default function AudioPlayer() {
               disabled={isSaving || isSaved}
               className={clsx(
                 "transition-colors p-2",
-                isSaved ? "text-green-400" : "text-gray-400 hover:text-[var(--color-neon-cyan)]"
+                isSaved ? "text-green-400" : "text-[var(--color-text-secondary)] hover:text-[var(--color-neon-cyan)]"
               )}
               title="Save to Library"
             >
@@ -272,7 +272,7 @@ export default function AudioPlayer() {
           isExpanded && "mt-6 w-full"
         )}>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-gray-400">SPEED</span>
+            <span className="text-xs font-mono text-[var(--color-text-secondary)]">SPEED</span>
             <input
               type="range"
               min="0.5"
@@ -280,7 +280,7 @@ export default function AudioPlayer() {
               step="0.1"
               value={playbackSpeed}
               onChange={handleSpeedChange}
-              className="w-24 accent-[var(--color-neon-cyan)] h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              className="w-24 accent-[var(--color-neon-cyan)] h-1 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-xs font-mono text-[var(--color-neon-cyan)] w-8 text-right">
               {playbackSpeed.toFixed(1)}x
@@ -288,9 +288,9 @@ export default function AudioPlayer() {
           </div>
           
           <div className="flex items-center gap-2">
-            <Volume2 size={18} className="text-gray-400" />
-            <div className="w-20 h-1 bg-gray-800 rounded-full overflow-hidden">
-              <div className="h-full w-3/4 bg-gray-500" />
+            <Volume2 size={18} className="text-[var(--color-text-secondary)]" />
+            <div className="w-20 h-1 bg-[var(--color-bg-surface)] rounded-full overflow-hidden">
+              <div className="h-full w-3/4 bg-[var(--color-text-secondary)]" />
             </div>
           </div>
         </div>

@@ -28,13 +28,13 @@ export default function VoiceSelector() {
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full items-center justify-between rounded-xl border border-[var(--color-glass-border)] bg-white/5 px-4 py-3 text-left transition-all hover:bg-white/10 focus:border-[var(--color-neon-cyan)] focus:outline-none"
+          className="flex w-full items-center justify-between rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3 text-left transition-all hover:bg-[var(--color-bg-hover)]/80 focus:border-[var(--color-neon-cyan)] focus:outline-none"
         >
           <div className="flex flex-col">
             <span className="font-bold text-[var(--color-text-primary)]">{currentVoice.name}</span>
             <span className="text-xs text-[var(--color-text-secondary)]">{currentVoice.desc}</span>
           </div>
-          {isOpen ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+          {isOpen ? <ChevronUp size={20} className="text-[var(--color-text-secondary)]" /> : <ChevronDown size={20} className="text-[var(--color-text-secondary)]" />}
         </button>
 
         <AnimatePresence>
@@ -57,7 +57,7 @@ export default function VoiceSelector() {
                       "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors",
                       selectedVoice === voice.name
                         ? "bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)]"
-                        : "text-[var(--color-text-primary)] hover:bg-white/5"
+                        : "text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                     )}
                   >
                     <div className="flex flex-col">

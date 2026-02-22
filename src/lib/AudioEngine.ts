@@ -1,7 +1,8 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { useSettingsStore } from '../store/useSettingsStore';
 import { storageService } from './StorageService';
-import { Mp3Encoder } from 'lamejs';
+// @ts-ignore
+import { Mp3Encoder } from './lame.js';
 
 class AudioEngine {
   private audioContext: AudioContext | null = null;
@@ -286,6 +287,12 @@ class AudioEngine {
 
   setSpeed(speed: number) {
     console.warn("Playback speed locked to 1.0 for Neural Integrity");
+  }
+
+  setVolume(volume: number) {
+    if (this.gainNode) {
+      this.gainNode.gain.value = Math.max(0, Math.min(1, volume));
+    }
   }
 
   getAudioBuffer(): AudioBuffer | null {

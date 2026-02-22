@@ -9,7 +9,7 @@ export default function App() {
   const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[var(--color-cyber-black)] text-white font-sans selection:bg-[var(--color-neon-cyan)] selection:text-black">
+    <div className="flex h-screen w-full overflow-hidden bg-[var(--color-cyber-black)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-neon-cyan)] selection:text-[var(--color-text-on-accent)]">
       <Sidebar />
       
       <main className="flex flex-1 flex-col relative w-full">
@@ -18,7 +18,7 @@ export default function App() {
           <div className="flex items-center gap-3 lg:hidden">
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-gray-400 hover:text-white"
+              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             >
               <Menu size={24} />
             </button>
@@ -27,9 +27,9 @@ export default function App() {
 
           <button 
             onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-3 rounded-full border border-[var(--color-glass-border)] bg-black/20 px-4 py-1.5 backdrop-blur-md ml-auto hover:bg-white/5 transition-colors cursor-pointer"
+            className="flex items-center gap-3 rounded-full border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] px-4 py-1.5 backdrop-blur-md ml-auto hover:bg-[var(--color-bg-hover)] transition-colors cursor-pointer"
           >
-            <span className="hidden sm:inline text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <span className="hidden sm:inline text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
               API Status:
             </span>
             {apiKey ? (
