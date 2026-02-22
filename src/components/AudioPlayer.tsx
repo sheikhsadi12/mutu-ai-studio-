@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Pause, Square, SkipBack, SkipForward, Volume2, Mic2, Save, Check, Download, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, Pause, Square, SkipBack, SkipForward, Volume2, Mic2, Save, Check, Download, ChevronUp, ChevronDown, Music, SlidersHorizontal } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { audioEngine } from '../lib/AudioEngine';
 import { useEffect, useState, ChangeEvent } from 'react';
@@ -16,6 +16,8 @@ export default function AudioPlayer() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false); // Track if current audio is already saved
   const [isExpanded, setIsExpanded] = useState(false); // For mobile expansion
+  const [bgmVolume, setBgmVolume] = useState(0.5);
+  const [pitch, setPitch] = useState(0);
 
   // Reset saved state when a new audio is generated
   useEffect(() => {
@@ -124,175 +126,141 @@ export default function AudioPlayer() {
   return (
     <>
       <motion.div
-        initial={{ y: 0 }}
-        animate={{ 
-          y: 0,
-          height: isExpanded ? 'auto' : '5rem' // 80px default
-        }}
+        layout
+        transition={{ type: 'spring', damping: 30, stiffness: 250 }}
         className={clsx(
-          "border-t border-[var(--color-glass-border)] bg-[var(--color-cyber-black)]/95 backdrop-blur-xl z-40 relative transition-all duration-300 ease-in-out",
+          "border-t border-[var(--color-glass-border)] bg-[var(--color-cyber-black)]/80 backdrop-blur-2xl z-40 relative noise-overlay",
           "flex flex-col lg:flex-row lg:h-24 lg:items-center lg:justify-between lg:px-8",
-          isExpanded ? "p-6 pb-8 h-auto fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" : "h-20 px-4 justify-center"
+          isExpanded 
+            ? "h-full fixed inset-0 p-6 pt-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-none"
+            : "h-20 px-4 justify-center"
         )}
       >
-        {/* Mobile Expanded Header */}
+        {/* --- EXPANDED VIEW --- */}
+        <AnimatePresence>
         {isExpanded && (
-          <div className="lg:hidden w-full flex justify-center mb-6" onClick={() => setIsExpanded(false)}>
-             <div className="flex items-center gap-1 text-[var(--color-text-secondary)]">
-                <ChevronDown size={16} />
-                <span className="text-xs uppercase tracking-widest">Collapse</span>
-             </div>
-          </div>
-        )}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col h-full w-full lg:hidden"
+          >
+            {/* Header */}
+            <div className="flex-shrink-0 w-full flex justify-center mb-4" onClick={() => setIsExpanded(false)}>
+              <div className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+                  <ChevronDown size={16} />
+                  <span className="text-xs uppercase tracking-widest">Collapse</span>
+              </div>
+            </div>
 
-        {/* Left: Info & Visualizer */}
-        <div className={clsx(
-          "flex items-center gap-4",
-          "lg:w-1/3",
-          isExpanded ? "w-full mb-6 justify-center" : "w-full justify-between lg:justify-start"
-        )}>
-          <div className="flex items-center gap-4 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-            <button 
-              className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0 relative overflow-hidden group hover:bg-[var(--color-neon-cyan)] hover:text-[var(--color-text-on-accent)] transition-colors"
-            >
-              <Mic2 size={24} />
-            </button>
-            <div className="flex flex-col justify-center overflow-hidden">
-              <div className="flex items-center gap-2">
+            {/* Cover Art */}
+            <div className="flex-grow w-full rounded-2xl bg-gradient-to-br from-[var(--color-neon-cyan-dim)] to-transparent border border-[var(--color-glass-border)] flex items-center justify-center mb-4">
+              <p className="text-sm text-[var(--color-text-secondary)]">AI Cover Art</p>
+            </div>
+
+            {/* Track Info & Visualizer */}
+            <div className="flex-shrink-0 w-full text-center mb-4">
+              <h3 className="text-lg font-bold text-white truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">{currentTrack ? currentTrack.voice : 'Select Audio'}</p>
+              <div className="flex items-end justify-center gap-0.5 h-10 mt-2">
+                {visualizerBars.map((height, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ height: isBuffering ? '20%' : `${height}%` }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className={clsx(
+                      "w-1.5 rounded-t-sm opacity-60",
+                      isBuffering ? "bg-gray-600" : "bg-gradient-to-t from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)]"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Main Controls */}
+            <div className="flex items-center gap-6 justify-center w-full mb-6">
+              <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipBack size={24} /></button>
+              <button onClick={togglePlay} className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-white shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
+                {isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
+              </button>
+              <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipForward size={24} /></button>
+            </div>
+
+            {/* Advanced Controls */}
+            <div className="w-full space-y-4">
+              <div className="flex items-center gap-3">
+                <Music size={16} className="text-[var(--color-text-secondary)]"/>
+                <input type="range" min="0" max="1" step="0.01" value={bgmVolume} onChange={(e) => setBgmVolume(parseFloat(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer" />
+              </div>
+              <div className="flex items-center gap-3">
+                <SlidersHorizontal size={16} className="text-[var(--color-text-secondary)]"/>
+                <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(e) => setPitch(parseInt(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+        </AnimatePresence>
+
+        {/* --- COLLAPSED VIEW --- */}
+        {!isExpanded && (
+          <div className="flex items-center justify-between w-full">
+            {/* Left: Info */}
+            <div className="flex items-center gap-4 cursor-pointer" onClick={() => setIsExpanded(true)}>
+              <div className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0">
+                <Mic2 size={24} />
+              </div>
+              <div className="flex flex-col justify-center overflow-hidden">
                 <h4 className="text-sm font-medium text-white truncate">
                   {currentTrack ? currentTrack.title : 'Capsule Player'}
                 </h4>
-                {isBuffering && (
-                  <motion.span 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-[10px] font-bold text-[var(--color-neon-cyan)] animate-pulse"
-                  >
-                    SYNCHRONIZING...
-                  </motion.span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] font-mono text-[var(--color-text-secondary)]">
-                  {Math.floor(progress / 60)}:{(progress % 60).toFixed(0).padStart(2, '0')}
-                </span>
-                <div className="flex items-end gap-0.5 h-4">
-                  {visualizerBars.map((height, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ height: isBuffering ? '20%' : `${height}%` }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className={clsx(
-                        "w-1 rounded-t-sm opacity-60",
-                        isBuffering ? "bg-gray-600" : "bg-[var(--color-neon-cyan)]"
-                      )}
-                    />
-                  ))}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-mono text-[var(--color-text-secondary)]">
+                    {Math.floor(progress / 60)}:{(progress % 60).toFixed(0).padStart(2, '0')}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Mobile Play/Pause Mini Control (Only visible when collapsed) */}
-          {!isExpanded && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-              className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-neon-cyan)] text-[var(--color-text-primary)]"
-            >
-              {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
-            </button>
-          )}
-        </div>
-
-        {/* Center: Controls */}
-        <div className={clsx(
-          "flex flex-col items-center gap-4",
-          "lg:w-1/3 lg:gap-2",
-          !isExpanded && "hidden lg:flex"
-        )}>
-          <div className="flex items-center gap-6 lg:gap-6 justify-center w-full">
-            <button 
-              onClick={handleStop}
-              className="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors p-2"
-            >
-              <Square size={18} fill="currentColor" />
-            </button>
-            
-            <button 
-              onClick={handlePrevious}
-              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
-            >
-              <SkipBack size={20} />
-            </button>
-            
-            <button 
-              onClick={togglePlay}
-              className="flex h-14 w-14 lg:h-12 lg:w-12 items-center justify-center rounded-full bg-[var(--color-neon-cyan)] text-[var(--color-text-primary)] hover:scale-105 hover:shadow-[0_0_15px_rgba(var(--color-neon-cyan-rgb),0.4)] transition-all"
-            >
-              {isPlaying ? (
-                <Pause size={24} fill="currentColor" />
-              ) : (
-                <Play size={24} fill="currentColor" className="ml-0.5" />
-              )}
-            </button>
-            
-            <button 
-              onClick={handleNext}
-              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
-            >
-              <SkipForward size={20} />
-            </button>
-
-            <button 
-              onClick={handleSave}
-              disabled={isSaving || isSaved}
-              className={clsx(
-                "transition-colors p-2",
-                isSaved ? "text-green-400" : "text-[var(--color-text-secondary)] hover:text-[var(--color-neon-cyan)]"
-              )}
-              title="Save to Library"
-            >
-              {isSaving ? (
-                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-[var(--color-neon-cyan)]" />
-              ) : isSaved ? (
-                <Check size={20} />
-              ) : (
-                <Save size={20} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Right: Speed & Volume */}
-        <div className={clsx(
-          "flex items-center justify-center lg:justify-end gap-6",
-          "lg:w-1/3",
-          !isExpanded && "hidden lg:flex",
-          isExpanded && "mt-6 w-full"
-        )}>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-[var(--color-text-secondary)]">SPEED</span>
-            <input
-              type="range"
-              min="0.5"
-              max="2.0"
-              step="0.1"
-              value={playbackSpeed}
-              onChange={handleSpeedChange}
-              className="w-24 accent-[var(--color-neon-cyan)] h-1 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer"
-            />
-            <span className="text-xs font-mono text-[var(--color-neon-cyan)] w-8 text-right">
-              {playbackSpeed.toFixed(1)}x
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Volume2 size={18} className="text-[var(--color-text-secondary)]" />
-            <div className="w-20 h-1 bg-[var(--color-bg-surface)] rounded-full overflow-hidden">
-              <div className="h-full w-3/4 bg-[var(--color-text-secondary)]" />
+            {/* Right: Mini Controls */}
+            <div className="flex items-center gap-2">
+              <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="lg:hidden flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-white transition-all active:scale-95">
+                {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+              </button>
             </div>
           </div>
+        )}
+        
+        {/* --- DESKTOP VIEW --- */}
+        <div className="hidden lg:flex w-full items-center justify-between">
+            {/* Left Info */}
+            <div className="flex items-center gap-4 w-1/3">
+                <div className="h-12 w-12 rounded-lg bg-[var(--color-neon-cyan-dim)] flex items-center justify-center text-[var(--color-neon-cyan)] border border-[var(--color-glass-border)] shrink-0">
+                    <Mic2 size={24} />
+                </div>
+                <div>
+                    <h4 className="font-medium text-white truncate">{currentTrack ? currentTrack.title : 'Capsule Player'}</h4>
+                    <span className="text-xs font-mono text-[var(--color-text-secondary)]">{Math.floor(progress / 60)}:{(progress % 60).toFixed(0).padStart(2, '0')}</span>
+                </div>
+            </div>
+
+            {/* Center Controls */}
+            <div className="flex items-center gap-6 justify-center w-1/3">
+                <button onClick={handlePrevious} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipBack size={20} /></button>
+                <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-neon-cyan)] to-[var(--color-cyber-purple)] text-white shadow-[0_0_20px_rgba(0,247,255,0.4)] transition-all hover:scale-105 active:scale-95">
+                    {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
+                </button>
+                <button onClick={handleNext} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><SkipForward size={20} /></button>
+            </div>
+
+            {/* Right Controls */}
+            <div className="flex items-center justify-end gap-4 w-1/3">
+                <button onClick={handleSave} disabled={isSaving || isSaved} className={clsx("transition-colors p-2", isSaved ? "text-green-400" : "text-[var(--color-text-secondary)] hover:text-[var(--color-neon-cyan)]")} title="Save to Library">
+                    {isSaving ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-[var(--color-neon-cyan)]" /> : isSaved ? <Check size={20} /> : <Save size={20} />}
+                </button>
+                <button onClick={handleDownload} className="p-2 text-[var(--color-text-secondary)] hover:text-white transition-all active:scale-95"><Download size={20} /></button>
+            </div>
         </div>
+
       </motion.div>
     </>
   );

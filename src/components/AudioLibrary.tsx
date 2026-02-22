@@ -203,10 +203,11 @@ export default function AudioLibrary() {
       <motion.div
         layout
         key={audio.id}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
         className={clsx(
-          "group relative flex items-center gap-3 rounded-lg border border-transparent bg-[var(--color-bg-hover)] p-3 hover:border-[var(--color-glass-border)] hover:bg-[var(--color-bg-hover)]/80 transition-all",
+          "group relative flex items-center gap-3 rounded-lg border border-transparent bg-[var(--color-bg-hover)] p-3 hover:border-[var(--color-glass-border)] hover:bg-[var(--color-bg-hover)]/80 transition-all noise-overlay",
           selectedIds.has(audio.id) ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/20 shadow-[0_0_15px_rgba(0,255,242,0.1)]" : "hover:translate-x-1"
         )}
         onClick={() => isSelectionMode && toggleSelection(audio.id)}

@@ -41,7 +41,7 @@ export default function Editor() {
       <div className="lg:hidden flex items-center justify-between">
         <button 
           onClick={() => setSidebarOpen(true)}
-          className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          className="p-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
         >
           <Menu size={24} />
         </button>
@@ -73,7 +73,7 @@ export default function Editor() {
       <div className="relative flex-1 min-h-[300px]">
         <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-[var(--color-neon-cyan-dim)] to-transparent opacity-50 blur-sm" />
         <div className={clsx(
-          "relative flex h-full flex-col overflow-hidden rounded-2xl border bg-[var(--color-cyber-black)]/40 backdrop-blur-md transition-all duration-500",
+          "relative flex h-full flex-col overflow-hidden rounded-2xl border bg-[var(--color-cyber-black)]/40 backdrop-blur-2xl transition-all duration-500 noise-overlay",
           isGenerating 
             ? "border-[var(--color-neon-cyan)] shadow-[0_0_30px_rgba(0,255,242,0.2)]" 
             : "border-[var(--color-glass-border)]"
@@ -110,7 +110,7 @@ export default function Editor() {
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="flex items-center gap-2 rounded-xl bg-[var(--color-neon-cyan)] px-4 py-2 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-cyan)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="flex items-center gap-2 rounded-xl bg-[var(--color-neon-cyan)] px-4 py-2 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-105 hover:shadow-[0_0_20px_var(--color-neon-cyan)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shimmer-button"
               >
                 {isGenerating ? (
                   <>

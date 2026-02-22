@@ -20,7 +20,7 @@ export default function Sidebar() {
   }, [setSidebarOpen]);
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-[var(--color-cyber-black)]/95 backdrop-blur-xl lg:bg-[var(--color-cyber-black)]/80 lg:backdrop-blur-md">
+    <div className="flex h-full flex-col bg-[var(--color-cyber-black)]/95 backdrop-blur-2xl lg:bg-[var(--color-cyber-black)]/80 lg:backdrop-blur-md noise-overlay">
       <div className="flex h-12 items-center justify-between px-6 border-b border-[var(--color-glass-border)] shrink-0">
         <div className="flex items-center gap-2 font-bold text-[var(--color-neon-cyan)]">
           <Music size={20} />
