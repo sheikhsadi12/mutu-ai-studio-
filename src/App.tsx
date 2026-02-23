@@ -4,7 +4,7 @@ import AudioPlayer from './components/AudioPlayer';
 import SettingsOverlay from './components/SettingsOverlay';
 import SplashScreen from './components/SplashScreen';
 import { useSettingsStore } from './store/useSettingsStore';
-import { useDynamicTheme } from './hooks/useDynamicTheme.ts';
+import { useDynamicTheme } from '@/src/hooks/useDynamicTheme.ts';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
