@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Library, Music, Settings, X, Archive, Loader2 } from 'lucide-react';
+import { Library, Music, Settings, X, Archive, Loader2, DownloadCloud, Palette } from 'lucide-react';
 import AudioLibrary from './AudioLibrary';
 import { useSettingsStore } from '../store/useSettingsStore';
 import clsx from 'clsx';
@@ -9,9 +9,10 @@ import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 
 export default function Sidebar() {
-  const { setSettingsOpen, isSidebarOpen, setSidebarOpen } = useSettingsStore();
+  const { setSettingsOpen, isSidebarOpen, setSidebarOpen, accentColor, setAccentColor } = useSettingsStore();
   const [hasAudios, setHasAudios] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
     const checkAudios = async () => {
@@ -23,6 +24,28 @@ export default function Sidebar() {
     window.addEventListener('library-updated', checkAudios);
     return () => window.removeEventListener('library-updated', checkAudios);
   }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleDownloadAll = async () => {
     const audios = await storageService.getAudios();
@@ -59,8 +82,37 @@ export default function Sidebar() {
         <AudioLibrary />
       </div>
 
+      {/* Customization Section */}
+      <div className="p-4 border-t border-[var(--color-glass-border)]">
+        <div className="flex items-center gap-2 mb-3 text-[var(--color-text-secondary)]">
+          <Palette size={16} />
+          <span className="text-xs font-bold uppercase tracking-widest">Theme Sync</span>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {['#00f3ff', '#a855f7', '#22c55e'].map((color) => (
+            <button
+              key={color}
+              onClick={() => setAccentColor(color)}
+              className={clsx(
+                "h-8 w-8 rounded-full border-2 shrink-0 transition-all",
+                accentColor === color 
+                  ? "border-[var(--color-text-primary)] scale-110 shadow-[0_0_10px_var(--accent-primary)]" 
+                  : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
+              )}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+          <button 
+            onClick={() => setSettingsOpen(true)}
+            className="h-8 w-8 rounded-full border border-dashed border-[var(--color-text-secondary)] flex items-center justify-center shrink-0 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] transition-all"
+          >
+            <span className="text-xs">+</span>
+          </button>
+        </div>
+      </div>
+
       {hasAudios && (
-        <div className="p-4 border-t border-[var(--color-glass-border)]">
+        <div className="p-2 space-y-2">
           <button
             onClick={handleDownloadAll}
             disabled={isDownloading}
@@ -72,6 +124,28 @@ export default function Sidebar() {
               <Archive size={16} />
             )}
             <span>{isDownloading ? 'Zipping...' : 'Download All (ZIP)'}</span>
+          </button>
+          
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-neon-cyan-dim)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-neon-cyan)] hover:bg-[var(--color-neon-cyan)] hover:text-black border border-[var(--color-neon-cyan)]/30 transition-all active:scale-[0.98]"
+            >
+              <DownloadCloud size={16} />
+              <span>Install App</span>
+            </button>
+          )}
+        </div>
+      )}
+      
+      {!hasAudios && deferredPrompt && (
+        <div className="p-2">
+          <button
+            onClick={handleInstallClick}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-neon-cyan-dim)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-neon-cyan)] hover:bg-[var(--color-neon-cyan)] hover:text-black border border-[var(--color-neon-cyan)]/30 transition-all active:scale-[0.98]"
+          >
+            <DownloadCloud size={16} />
+            <span>Install App</span>
           </button>
         </div>
       )}

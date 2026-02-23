@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useSettingsStore, VoiceName } from '../store/useSettingsStore';
-import { Check, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, Mic, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import clsx from 'clsx';
 import { useState } from 'react';
 
@@ -78,10 +78,11 @@ export default function VoiceSelector() {
       </div>
 
       <div>
-        <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+        <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">
           <span>Pitch Adjustment</span>
         </label>
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-glass)] noise-overlay">
+          <SlidersHorizontal size={16} className="text-[var(--text-secondary)]"/>
           <input
             type="range"
             min="-10"
@@ -89,9 +90,9 @@ export default function VoiceSelector() {
             step="1"
             value={voicePitch}
             onChange={(e) => setVoicePitch(Number(e.target.value))}
-            className="w-full h-2 bg-[var(--bg-surface)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-primary)]"
+            className="w-full h-1.5 bg-[var(--bg-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-primary)]"
           />
-          <span className="text-sm font-mono text-[var(--accent-primary)] w-10 text-center">
+          <span className="text-xs font-mono text-[var(--accent-primary)] w-8 text-right">
             {voicePitch > 0 ? '+' : ''}{voicePitch}
           </span>
         </div>

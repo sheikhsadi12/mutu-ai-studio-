@@ -182,11 +182,12 @@ export default function AudioPlayer() {
                 type="range" 
                 min="0" 
                 max={currentTrack?.duration || 100}
+                step="0.01"
                 value={progress}
                 onChange={handleSeek}
-                className="w-full accent-[var(--color-neon-cyan)] h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer"
+                className="w-full accent-[var(--color-neon-cyan)] h-2 bg-[var(--color-glass-border)] rounded-lg appearance-none cursor-pointer shadow-inner"
               />
-              <div className="flex justify-between text-xs font-mono text-[var(--color-text-secondary)] mt-1">
+              <div className="flex justify-between text-xs font-mono text-[var(--color-text-secondary)] mt-2">
                 <span>{formatTime(progress)}</span>
                 <span>{formatTime(currentTrack?.duration || 0)}</span>
               </div>
@@ -196,11 +197,11 @@ export default function AudioPlayer() {
             <div className="w-full space-y-4 p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-glass-border)] noise-overlay">
               <div className="flex items-center gap-3">
                 <Music size={16} className="text-[var(--color-text-secondary)]"/>
-                <input type="range" min="0" max="1" step="0.01" value={bgmVolume} onChange={(e) => setBgmVolume(parseFloat(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer" />
+                <input type="range" min="0" max="1" step="0.01" value={bgmVolume} onChange={(e) => setBgmVolume(parseFloat(e.target.value))} className="w-full accent-[var(--color-neon-cyan)] h-1.5 bg-[var(--color-bg-hover)] rounded-lg appearance-none cursor-pointer" />
               </div>
               <div className="flex items-center gap-3">
                 <SlidersHorizontal size={16} className="text-[var(--color-text-secondary)]"/>
-                <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(e) => setPitch(parseInt(e.target.value))} className="w-full accent-[var(--color-cyber-purple)] h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer" />
+                <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(e) => setPitch(parseInt(e.target.value))} className="w-full accent-[var(--color-neon-cyan)] h-1.5 bg-[var(--color-bg-hover)] rounded-lg appearance-none cursor-pointer" />
               </div>
             </div>
           </motion.div>

@@ -455,7 +455,7 @@ export default function AudioLibrary() {
       </div>
 
       {/* Footer Actions */}
-      {audios.length > 0 && (
+      {audios.length > 0 && selectedIds.size > 0 && (
         <div className="sticky bottom-0 p-2 bg-gradient-to-t from-[var(--color-cyber-black)] via-[var(--color-cyber-black)] to-transparent pt-6">
           <div className="rounded-lg border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)]/80 backdrop-blur-md p-1.5 space-y-1.5 shadow-2xl">
             {selectedIds.size >= 2 && (
@@ -489,18 +489,17 @@ export default function AudioLibrary() {
                   </button>
               </div>
             )}
-            {selectedIds.size > 0 && (
-              <button
-                onClick={handleDownloadSelected}
-                className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-bg-surface)] py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-              >
-                <Archive size={12} />
-                Download Selected ({selectedIds.size})
-              </button>
-            )}
+            <button
+              onClick={handleDownloadSelected}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-bg-surface)] py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+            >
+              <Archive size={12} />
+              Download Selected ({selectedIds.size})
+            </button>
           </div>
         </div>
       )}
+
     </div>
   );
 }

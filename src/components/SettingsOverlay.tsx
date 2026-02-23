@@ -50,15 +50,6 @@ export default function SettingsOverlay() {
     }
   }, [isSettingsOpen, apiKey, activeSettingsPage, setActiveSettingsPage]);
 
-  // Apply Theme and Accent Color to DOM
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', themeMode);
-    document.documentElement.style.setProperty('--accent-primary', accentColor);
-    // Add 10% opacity for the dim version
-    const dimColor = accentColor.startsWith('#') ? `${accentColor}1a` : accentColor;
-    document.documentElement.style.setProperty('--accent-dim', dimColor);
-  }, [themeMode, accentColor]);
-
   // Handle History API for back button
   useEffect(() => {
     const handlePopState = () => {
@@ -383,7 +374,7 @@ export default function SettingsOverlay() {
           {/* Header */}
           <div className="flex items-center justify-between mb-12 relative">
             <div className="flex items-center">
-              {activeSettingsPage && (
+              {activeSettingsPage && apiKey && (
                 <button 
                   onClick={closePage}
                   className="p-3 -ml-3 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
@@ -402,12 +393,14 @@ export default function SettingsOverlay() {
               )}
             </div>
 
-            <button 
-              onClick={() => setSettingsOpen(false)}
-              className="p-2 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
-            >
-              <X size={20} />
-            </button>
+            {apiKey && !activeSettingsPage && (
+              <button 
+                onClick={() => setSettingsOpen(false)}
+                className="p-2 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
+              >
+                <X size={20} />
+              </button>
+            )}
           </div>
 
           {/* Page Content */}
@@ -417,11 +410,11 @@ export default function SettingsOverlay() {
 
           {/* Footer Branding */}
           <div className="fixed bottom-8 left-0 right-0 text-center pointer-events-none opacity-20">
-             <span className="text-[10px] font-bold uppercase tracking-[1em] text-white">
-               MUTU ARCHITECTURE
+             <span className="text-[10px] font-bold uppercase tracking-[1em] text-[var(--color-text-primary)]">
+               THIS APP CREATED BY SHEIKH SADI
              </span>
-             <p className="text-[10px] text-white/50 tracking-wider mt-2">
-               This app created by Sheikh Sadi
+             <p className="text-[10px] text-[var(--color-text-secondary)] tracking-wider mt-2">
+               MUTU ARCHITECTURE
              </p>
           </div>
         </motion.div>

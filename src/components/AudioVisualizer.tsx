@@ -36,13 +36,19 @@ export default function AudioVisualizer({ className, barColor = 'var(--color-neo
       let barHeight;
       let x = 0;
 
+      let resolvedColor = barColor;
+      if (barColor.startsWith('var(')) {
+        const varName = barColor.slice(4, -1);
+        resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#00f3ff';
+      }
+
       for (let i = 0; i < bufferLength; i++) {
         barHeight = (dataArray[i] / 255) * canvas.height;
 
-        ctx.fillStyle = barColor;
+        ctx.fillStyle = resolvedColor;
         // Add some glow
         ctx.shadowBlur = 5;
-        ctx.shadowColor = barColor;
+        ctx.shadowColor = resolvedColor;
         
         ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
