@@ -79,7 +79,7 @@ export default function AudioLibrary() {
   };
 
   const handleDownload = (audio: AudioFile) => {
-    saveAs(audio.blob, `${audio.title}_${audio.voice}_Mutu.mp3`);
+    saveAs(audio.blob, `${audio.title}_${audio.voice}_AI.mp3`);
   };
 
   const handleDownloadSelected = async () => {
@@ -89,7 +89,7 @@ export default function AudioLibrary() {
         : audios;
         
     targetAudios.forEach(audio => {
-      zip.file(`${audio.title}_${audio.voice}_Mutu.mp3`, audio.blob);
+      zip.file(`${audio.title}_${audio.voice}_AI.mp3`, audio.blob);
     });
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, selectedIds.size > 0 ? 'Selected_Recordings.zip' : 'Mutu_Audio_Library.zip');
