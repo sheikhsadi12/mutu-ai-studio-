@@ -31,6 +31,7 @@ export default function AudioLibrary() {
   const [trimStart, setTrimStart] = useState('0');
   const [trimEnd, setTrimEnd] = useState('0');
 
+  const [activeTab, setActiveTab] = useState<'recordings' | 'merged'>('recordings');
   const [mergedAudios, setMergedAudios] = useState<AudioFile[]>([]);
 
   useEffect(() => {
@@ -376,17 +377,12 @@ export default function AudioLibrary() {
         currentName={renamingAudio ? renamingAudio.title : `Merged Recording ${new Date().toLocaleTimeString()}`}
         itemType={pendingMergeBlob ? 'merged file' : 'recording'}
       />
-      {/* Search Bar & Selection Toggle */}
-      <div className="px-4 py-2 border-b border-[var(--color-glass-border)] space-y-2">
+      {/* Header & Selection Toggle */}
+      <div className="px-4 py-3 border-b border-[var(--color-glass-border)] space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1 -ml-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            >
-              <X size={16} />
-            </button>
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Library</h3>
+          <div className="flex items-center gap-2 text-[13px] font-bold tracking-[0.1em] text-[var(--color-neon-cyan)] uppercase">
+            <Music size={16} />
+            <span>MUTU AUDIO</span>
           </div>
           <button 
             onClick={() => {
@@ -413,20 +409,49 @@ export default function AudioLibrary() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-[var(--color-glass-border)]">
+        <button
+          onClick={() => setActiveTab('recordings')}
+          className={clsx(
+            "flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-all border-b-2",
+            activeTab === 'recordings' 
+              ? "text-[var(--color-neon-cyan)] border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/10" 
+              : "text-[var(--color-text-secondary)] border-transparent hover:text-[var(--color-text-primary)]"
+          )}
+        >
+          Recordings
+        </button>
+        <button
+          onClick={() => setActiveTab('merged')}
+          className={clsx(
+            "flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-all border-b-2",
+            activeTab === 'merged' 
+              ? "text-[var(--color-neon-cyan)] border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)]/10" 
+              : "text-[var(--color-text-secondary)] border-transparent hover:text-[var(--color-text-primary)]"
+          )}
+        >
+          Margin Files
+        </button>
+      </div>
+
       {/* Lists */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-3">
-        <div>
-          <h4 className="px-2 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-1.5">Recordings</h4>
-          <div className="space-y-1">
-            {renderAudioList(filteredAudios)}
-          </div>
-        </div>
-        <div>
-          <h4 className="px-2 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-secondary)] mb-1.5">Merged Files</h4>
-          <div className="space-y-1">
-            {renderAudioList(filteredMergedAudios, true)}
-          </div>
-        </div>
+      <div className="flex-1 overflow-y-auto p-2">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: activeTab === 'recordings' ? -10 : 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: activeTab === 'recordings' ? 10 : -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-1"
+          >
+            {activeTab === 'recordings' 
+              ? renderAudioList(filteredAudios)
+              : renderAudioList(filteredMergedAudios, true)
+            }
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Footer Actions */}
@@ -464,13 +489,15 @@ export default function AudioLibrary() {
                   </button>
               </div>
             )}
-            <button
-              onClick={handleDownloadSelected}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-bg-surface)] py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-            >
-              <Archive size={12} />
-              {selectedIds.size > 0 ? `Download Selected (${selectedIds.size})` : 'Download All (ZIP)'}
-            </button>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={handleDownloadSelected}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-bg-surface)] py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+              >
+                <Archive size={12} />
+                Download Selected ({selectedIds.size})
+              </button>
+            )}
           </div>
         </div>
       )}

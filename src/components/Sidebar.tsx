@@ -1,12 +1,46 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Library, Music, Settings, X } from 'lucide-react';
+import { Library, Music, Settings, X, Archive, Loader2 } from 'lucide-react';
 import AudioLibrary from './AudioLibrary';
 import { useSettingsStore } from '../store/useSettingsStore';
 import clsx from 'clsx';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { storageService, AudioFile } from '../lib/StorageService';
+import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 
 export default function Sidebar() {
   const { setSettingsOpen, isSidebarOpen, setSidebarOpen } = useSettingsStore();
+  const [hasAudios, setHasAudios] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    const checkAudios = async () => {
+      const audios = await storageService.getAudios();
+      setHasAudios(audios.length > 0);
+    };
+    checkAudios();
+    
+    window.addEventListener('library-updated', checkAudios);
+    return () => window.removeEventListener('library-updated', checkAudios);
+  }, []);
+
+  const handleDownloadAll = async () => {
+    const audios = await storageService.getAudios();
+    if (audios.length === 0) return;
+    
+    setIsDownloading(true);
+    try {
+      const zip = new JSZip();
+      audios.forEach(audio => {
+        zip.file(`${audio.title}.mp3`, audio.blob);
+      });
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `Mutu_Library_${Date.now()}.zip`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Close sidebar on window resize if moving to desktop
   useEffect(() => {
@@ -24,6 +58,23 @@ export default function Sidebar() {
       <div className="flex-1 overflow-hidden flex flex-col">
         <AudioLibrary />
       </div>
+
+      {hasAudios && (
+        <div className="p-4 border-t border-[var(--color-glass-border)]">
+          <button
+            onClick={handleDownloadAll}
+            disabled={isDownloading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-bg-surface)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] hover:border-[var(--color-neon-cyan)] border border-transparent transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Archive size={16} />
+            )}
+            <span>{isDownloading ? 'Zipping...' : 'Download All (ZIP)'}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 
