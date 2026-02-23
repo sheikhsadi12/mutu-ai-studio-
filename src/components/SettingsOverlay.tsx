@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Key, ShieldCheck, AlertCircle, Palette, Cpu, Moon, Sun, ChevronLeft, Settings2, Eye, EyeOff, Pipette, Plus } from 'lucide-react';
+import { X, Key, ShieldCheck, AlertCircle, Palette, Cpu, Moon, Sun, ChevronLeft, Settings2, Eye, EyeOff, Pipette, Plus, CheckCircle2 } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import clsx from 'clsx';
 
@@ -193,7 +193,19 @@ export default function SettingsOverlay() {
             </section>
 
             <section>
-              <h4 className="mb-6 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Accent Color</h4>
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Accent Color</h4>
+                <div className="flex items-center gap-2 bg-[var(--accent-dim)] px-3 py-1 rounded-full border border-[var(--accent-primary)]/20">
+                  <div 
+                    className="h-2 w-2 rounded-full shadow-[0_0_8px_var(--accent-primary)]"
+                    style={{ backgroundColor: accentColor }}
+                  />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--accent-primary)]">
+                    {ACCENT_COLORS.find(c => c.value === accentColor)?.name || 'Custom'}
+                  </span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
                 {ACCENT_COLORS.map((color) => (
                   <button
@@ -206,8 +218,8 @@ export default function SettingsOverlay() {
                   >
                     <div 
                       className={clsx(
-                        "h-10 w-10 rounded-full border-2 shadow-2xl transition-all",
-                        accentColor === color.value ? "border-[var(--color-text-primary)]" : "border-transparent grayscale opacity-50"
+                        "h-10 w-10 rounded-full border-2 shadow-lg transition-all",
+                        accentColor === color.value ? "border-[var(--color-text-primary)] scale-110 shadow-[0_0_15px_var(--accent-primary)]" : "border-transparent hover:scale-105"
                       )}
                       style={{ backgroundColor: color.value }}
                     />
@@ -314,41 +326,44 @@ export default function SettingsOverlay() {
           >
             <button
               onClick={() => setActiveSettingsPage('api')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--color-neon-cyan)]/50 hover:bg-[var(--color-neon-cyan)]/10"
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30 group-hover:scale-110 transition-transform">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
                 <Key size={32} />
               </div>
               <div className="text-center">
                 <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">API Config</h4>
                 <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Neural Link</p>
               </div>
+              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
             </button>
 
             <button
               onClick={() => setActiveSettingsPage('appearance')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--color-neon-cyan)]/50 hover:bg-[var(--color-neon-cyan)]/10"
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30 group-hover:scale-110 transition-transform">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
                 <Palette size={32} />
               </div>
               <div className="text-center">
                 <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Appearance</h4>
                 <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">UI Calibration</p>
               </div>
+              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
             </button>
 
             <button
               onClick={() => setActiveSettingsPage('model')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--color-neon-cyan)]/50 hover:bg-[var(--color-neon-cyan)]/10"
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30 group-hover:scale-110 transition-transform">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
                 <Cpu size={32} />
               </div>
               <div className="text-center">
                 <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Neural Engine</h4>
                 <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Model Tuning</p>
               </div>
+              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
             </button>
           </motion.div>
         );
@@ -366,30 +381,33 @@ export default function SettingsOverlay() {
           className="fixed inset-0 z-[60] bg-[var(--color-cyber-black)] flex flex-col p-6 noise-overlay overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-12">
-            <button 
-              onClick={closePage}
-              className="p-3 -ml-3 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
-            >
-              {activeSettingsPage ? <ChevronLeft size={36} /> : <X size={36} />}
-            </button>
-            <div className="flex items-center gap-6">
-              {apiKey ? (
-                <div className="flex items-center gap-2 text-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)] px-3 py-1 rounded-full border border-[var(--color-neon-cyan)]/30">
-                  <ShieldCheck size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">System Active</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-3 py-1 rounded-full border border-red-400/30">
-                  <AlertCircle size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Offline</span>
+          <div className="flex items-center justify-between mb-12 relative">
+            <div className="flex items-center">
+              {activeSettingsPage && (
+                <button 
+                  onClick={closePage}
+                  className="p-3 -ml-3 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+              )}
+            </div>
+            
+            <div className="absolute left-1/2 -translate-x-1/2">
+              {apiKey && (
+                <div className="flex items-center gap-2.5 text-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)] px-4 py-1.5 rounded-full border border-[var(--color-neon-cyan)]/30 shadow-[0_0_15px_var(--accent-dim)] whitespace-nowrap">
+                  <CheckCircle2 size={14} className="shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em]">System Active</span>
                 </div>
               )}
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-[var(--color-neon-cyan)]">System Page</span>
-                <span className="text-xs font-mono text-[var(--color-text-secondary)]">0x{(activeSettingsPage || 'MENU').toUpperCase()}</span>
-              </div>
             </div>
+
+            <button 
+              onClick={() => setSettingsOpen(false)}
+              className="p-2 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
+            >
+              <X size={20} />
+            </button>
           </div>
 
           {/* Page Content */}
@@ -399,7 +417,12 @@ export default function SettingsOverlay() {
 
           {/* Footer Branding */}
           <div className="fixed bottom-8 left-0 right-0 text-center pointer-events-none opacity-20">
-             <span className="text-[10px] font-bold uppercase tracking-[1em] text-white">MUTU ARCHITECTURE</span>
+             <span className="text-[10px] font-bold uppercase tracking-[1em] text-white">
+               MUTU ARCHITECTURE
+             </span>
+             <p className="text-[10px] text-white/50 tracking-wider mt-2">
+               This app created by Sheikh Sadi
+             </p>
           </div>
         </motion.div>
       )}
