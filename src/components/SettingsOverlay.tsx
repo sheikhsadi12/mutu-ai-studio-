@@ -1,7 +1,8 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Key, ShieldCheck, AlertCircle, Palette, Cpu, Moon, Sun, ChevronLeft, Settings2, Eye, EyeOff, Pipette, Plus, CheckCircle2 } from 'lucide-react';
+import { X, Key, ShieldCheck, AlertCircle, Palette, Cpu, Moon, Sun, ChevronLeft, Settings2, Eye, EyeOff, Pipette, Plus, CheckCircle2, Fingerprint } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useAppIdentity } from '../context/IdentityContext';
 import clsx from 'clsx';
 
 const ACCENT_COLORS = [
@@ -38,6 +39,8 @@ export default function SettingsOverlay() {
     themeMode, setThemeMode,
     accentColor, setAccentColor
   } = useSettingsStore();
+
+  const { logoColor, setLogoColor, syncEnabled, setSyncEnabled } = useAppIdentity();
 
   const [inputValue, setInputValue] = useState(apiKey || '');
   const [error, setError] = useState('');
@@ -139,6 +142,119 @@ export default function SettingsOverlay() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        );
+
+      case 'identity':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="max-w-xl w-full"
+          >
+            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30">
+              <Fingerprint size={32} />
+            </div>
+            <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">Identity Studio</h3>
+            <p className="text-[var(--color-text-secondary)] mb-8 leading-relaxed">
+              Customize the application identity and branding. Sync the app icon with your theme or choose a custom signature color.
+            </p>
+
+            {/* Live Preview Card */}
+            <div className="mb-8 p-8 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-surface)] to-[var(--color-bg-hover)] opacity-50" />
+              
+              <motion.div
+                className="relative z-10 w-32 h-32 rounded-[2rem] shadow-2xl flex items-center justify-center border border-white/10 backdrop-blur-xl"
+                animate={{
+                  backgroundColor: `${logoColor}20`, // 20% opacity
+                  borderColor: `${logoColor}40`,
+                  boxShadow: `0 20px 40px -10px ${logoColor}30`
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                <motion.svg 
+                  viewBox="0 0 100 100" 
+                  className="w-20 h-20"
+                  animate={{ fill: logoColor }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <circle cx="50" cy="50" r="45" fillOpacity="0.2" />
+                  <path d="M30 50 L45 65 L70 35" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </motion.svg>
+              </motion.div>
+              
+              <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">Live App Icon Preview</p>
+            </div>
+
+            {/* Sync Toggle */}
+            <div className="mb-8 flex items-center justify-between p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
+              <div>
+                <h4 className="text-sm font-bold text-[var(--color-text-primary)]">Sync Logo with Theme</h4>
+                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-widest mt-1">
+                  Automatically match app icon
+                </p>
+              </div>
+              <button
+                onClick={() => setSyncEnabled(!syncEnabled)}
+                className={clsx(
+                  "relative h-8 w-14 rounded-full transition-colors duration-300 focus:outline-none",
+                  syncEnabled ? "bg-[var(--color-neon-cyan)]" : "bg-[var(--color-bg-hover)] border border-[var(--color-glass-border)]"
+                )}
+              >
+                <motion.div
+                  className="absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-md"
+                  animate={{ x: syncEnabled ? 24 : 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              </button>
+            </div>
+
+            {/* Manual Selector */}
+            <AnimatePresence>
+              {!syncEnabled && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <h4 className="mb-6 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Custom Signature</h4>
+                  <div className="grid grid-cols-4 gap-4">
+                    {[
+                      { name: 'Cyan', value: '#00f3ff' },
+                      { name: 'Purple', value: '#a855f7' },
+                      { name: 'Green', value: '#22c55e' },
+                      { name: 'Gold', value: '#eab308' }
+                    ].map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => setLogoColor(color.value)}
+                        className={clsx(
+                          "group relative flex flex-col items-center gap-3 transition-all p-4 rounded-2xl border bg-[var(--color-bg-surface)]",
+                          logoColor === color.value 
+                            ? "border-[var(--color-text-primary)] bg-[var(--color-bg-hover)]" 
+                            : "border-[var(--color-glass-border)] hover:border-[var(--color-text-secondary)]"
+                        )}
+                      >
+                        <div 
+                          className="h-8 w-8 rounded-full shadow-lg transition-transform group-hover:scale-110"
+                          style={{ backgroundColor: color.value }}
+                        />
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">
+                          {color.name}
+                        </span>
+                        {logoColor === color.value && (
+                          <div className="absolute top-2 right-2 text-[var(--color-text-primary)]">
+                            <CheckCircle2 size={12} />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         );
 
@@ -313,7 +429,7 @@ export default function SettingsOverlay() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-3 gap-6"
+            className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             <button
               onClick={() => setActiveSettingsPage('api')}
@@ -325,6 +441,20 @@ export default function SettingsOverlay() {
               <div className="text-center">
                 <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">API Config</h4>
                 <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Neural Link</p>
+              </div>
+              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
+            </button>
+
+            <button
+              onClick={() => setActiveSettingsPage('identity')}
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
+            >
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
+                <Fingerprint size={32} />
+              </div>
+              <div className="text-center">
+                <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Identity</h4>
+                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Branding Studio</p>
               </div>
               <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
             </button>

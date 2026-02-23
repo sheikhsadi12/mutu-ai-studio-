@@ -79,7 +79,7 @@ export default function Editor() {
         <div className="space-y-1.5">
           <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
             <Mic size={12} />
-            <span>AI Voice Cloning</span>
+            <span>Mutu Voice Cloning</span>
           </label>
           <div className="relative group">
             <div className={clsx(

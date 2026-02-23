@@ -8,6 +8,7 @@ import { useDynamicTheme } from './hooks/useDynamicTheme';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { IdentityProvider } from './context/IdentityContext';
 
 export default function App() {
   const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
@@ -25,7 +26,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <IdentityProvider>
       <AnimatePresence>
         {showSplash && <SplashScreen onComplete={() => {}} />}
       </AnimatePresence>
@@ -74,6 +75,6 @@ export default function App() {
           <SettingsOverlay />
         </main>
       </div>
-    </>
+    </IdentityProvider>
   );
 }
