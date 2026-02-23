@@ -38,7 +38,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
             transition={{ delay: 0.2 }}
             className="text-3xl font-bold text-[var(--color-text-primary)] tracking-widest uppercase mb-2"
           >
-            Mutu Audio Studio
+            Mutu Audio Studio Pro
           </motion.h1>
           
           <motion.div 

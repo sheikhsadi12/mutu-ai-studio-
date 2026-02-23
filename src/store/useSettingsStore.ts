@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AudioFile } from '../lib/StorageService';
 
-export type VoiceName = 'Kore' | 'Fenrir' | 'Puck' | 'Charon' | 'Zephyr';
+export type VoiceName = 'Kore' | 'Fenrir' | 'Puck' | 'Charon' | 'Zephyr' | 'bn-BD-Neural2-A' | 'bn-BD-Neural2-B' | 'en-US-Neural2-F' | 'en-US-Neural2-G';
 
 interface SettingsState {
   apiKey: string | null;
@@ -17,6 +17,9 @@ interface SettingsState {
 
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
+
+  voiceSpeed: number;
+  setVoiceSpeed: (speed: number) => void;
 
   isPlaying: boolean;
   setIsPlaying: (isPlaying: boolean) => void;
@@ -73,6 +76,9 @@ export const useSettingsStore = create<SettingsState>()(
       playbackSpeed: 1.0,
       setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
 
+      voiceSpeed: 0.95,
+      setVoiceSpeed: (speed) => set({ voiceSpeed: speed }),
+
       isPlaying: false,
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       
@@ -117,6 +123,7 @@ export const useSettingsStore = create<SettingsState>()(
         apiKey: state.apiKey, 
         selectedVoice: state.selectedVoice,
         voicePitch: state.voicePitch,
+        voiceSpeed: state.voiceSpeed,
         themeMode: state.themeMode,
         accentColor: state.accentColor,
         clonedVoiceData: state.clonedVoiceData

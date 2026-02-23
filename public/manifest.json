@@ -1,6 +1,6 @@
 {
   "name": "Mutu Audio Studio Pro",
-  "short_name": "Mutu Studio",
+  "short_name": "Mutu Audio",
   "description": "A futuristic React application for audio generation with a cyber-minimalist theme.",
   "start_url": "/",
   "display": "standalone",
@@ -8,15 +8,15 @@
   "theme_color": "#0a0a0c",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

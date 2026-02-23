@@ -33,7 +33,7 @@ class AudioEngine {
   private initAudioContext() {
     if (!this.audioContext) {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: 24000
+        sampleRate: 48000 // Force 48,000Hz for Ultra HD
       });
       this.gainNode = this.audioContext.createGain();
       this.analyserNode = this.audioContext.createAnalyser();
@@ -48,7 +48,7 @@ class AudioEngine {
   }
 
   async generateAudio(text: string, styleInstruction: string): Promise<void> {
-    const { apiKey, selectedVoice, voicePitch, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
+    const { apiKey, selectedVoice, voicePitch, voiceSpeed, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
 
@@ -97,19 +97,42 @@ class AudioEngine {
             },
           });
         } else {
-          // Standard TTS Mode
-          const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
-          const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${text}\"</prosody></speak>`;
+          // Standard TTS Mode with Advanced SSML
           
+          // 1. Clean and SSML Construction
+          const cleanText = text.trim();
+          // Replace commas with 400ms break
+          let ssmlContent = cleanText.replace(/,/g, '<break time="400ms"/>');
+          // Replace full stops and daris with 900ms break
+          ssmlContent = ssmlContent.replace(/[.|।]/g, '<break time="900ms"/>');
+          
+          // Wrap in prosody and speak, add 1000ms break at end
+          const ssmlText = `<speak><prosody rate="0.92x" pitch="-1st">${ssmlContent}<break time="1000ms"/></prosody></speak>`;
+
+          // 2. Neural2 Voice Lockdown
+          let effectiveVoice = selectedVoice;
+          if (selectedVoice.startsWith('bn')) {
+            effectiveVoice = 'bn-BD-Neural2-A';
+          } else {
+            effectiveVoice = 'en-US-Neural2-F';
+          }
+
           return await ai.models.generateContentStream({
             model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ parts: [{ text: ssmlText }] }],
             config: {
               responseModalities: [Modality.AUDIO],
               speechConfig: {
                 voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: selectedVoice },
+                  prebuiltVoiceConfig: { voiceName: effectiveVoice },
                 },
+                ...({
+                  audioConfig: {
+                    sampleRateHertz: 48000,
+                    effectsProfileId: ['headphone-class-device'],
+                    volumeGainDb: 0.0,
+                  },
+                } as any),
               },
             },
           });
@@ -118,6 +141,8 @@ class AudioEngine {
 
       const stream = await this.retry(generateStream);
       this.startScheduler();
+
+      let pendingBuffer: AudioBuffer | null = null;
 
       for await (const chunk of stream) {
         if (this.abortController.signal.aborted) break;
@@ -129,8 +154,11 @@ class AudioEngine {
           const buffer = await this.decodeBytes(bytes);
           
           if (buffer) {
-            this.applyMicroFade(buffer);
-            this.chunkQueue.push(buffer);
+            if (pendingBuffer) {
+               this.applyMicroFade(pendingBuffer);
+               this.chunkQueue.push(pendingBuffer);
+            }
+            pendingBuffer = buffer;
             
             const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
             if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
@@ -138,6 +166,12 @@ class AudioEngine {
             }
           }
         }
+      }
+
+      // Process the final chunk with Fade-out
+      if (pendingBuffer) {
+        this.applyEndFade(pendingBuffer);
+        this.chunkQueue.push(pendingBuffer);
       }
 
       this.isStreamFinished = true;
@@ -202,7 +236,7 @@ class AudioEngine {
       if (evenLength < 2) return null;
       
       const pcm16 = new Int16Array(bytes.buffer, bytes.byteOffset, evenLength / 2);
-      const buffer = this.audioContext.createBuffer(1, pcm16.length, 24000);
+      const buffer = this.audioContext.createBuffer(1, pcm16.length, 48000); // Updated sample rate
       const channelData = buffer.getChannelData(0);
       for (let i = 0; i < pcm16.length; i++) {
         channelData[i] = pcm16[i] / 32768.0;
@@ -221,6 +255,30 @@ class AudioEngine {
       for (let i = 0; i < fadeSamples; i++) {
         data[i] *= (i / fadeSamples);
         data[data.length - 1 - i] *= (i / fadeSamples);
+      }
+    }
+  }
+
+  private applyEndFade(buffer: AudioBuffer) {
+    const fadeDuration = 0.2; // 200ms
+    const sampleRate = buffer.sampleRate;
+    const fadeSamples = Math.floor(fadeDuration * sampleRate);
+    const microFadeSamples = Math.floor(this.FADE_TIME * sampleRate);
+
+    for (let c = 0; c < buffer.numberOfChannels; c++) {
+      const data = buffer.getChannelData(c);
+      
+      // Micro-fade in at start (to stitch with previous)
+      for (let i = 0; i < microFadeSamples && i < data.length; i++) {
+        data[i] *= (i / microFadeSamples);
+      }
+
+      // Fade out at end (200ms)
+      const startFadeIndex = Math.max(0, data.length - fadeSamples);
+      for (let i = 0; i < fadeSamples && (startFadeIndex + i) < data.length; i++) {
+         const index = startFadeIndex + i;
+         const volume = 1 - (i / fadeSamples);
+         data[index] *= volume;
       }
     }
   }
@@ -513,7 +571,7 @@ class AudioEngine {
       int16Samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
 
-    const mp3encoder = new (window as any).lamejs.Mp3Encoder(1, 24000, 128);
+    const mp3encoder = new (window as any).lamejs.Mp3Encoder(1, 48000, 128);
     const mp3Data: Int8Array[] = [];
     const sampleBlockSize = 1152;
 
@@ -557,8 +615,8 @@ class AudioEngine {
     // Convert to Int16Array for lamejs
     const samples = new Int16Array(pcmData.buffer, pcmData.byteOffset, pcmData.byteLength / 2);
     
-    // Initialize MP3 Encoder (Mono, 24kHz, 128kbps)
-    const mp3encoder = new (window as any).lamejs.Mp3Encoder(1, 24000, 128);
+    // Initialize MP3 Encoder (Mono, 48kHz, 128kbps)
+    const mp3encoder = new (window as any).lamejs.Mp3Encoder(1, 48000, 128);
     const mp3Data: Int8Array[] = [];
     
     const sampleBlockSize = 1152; // Multiple of 576

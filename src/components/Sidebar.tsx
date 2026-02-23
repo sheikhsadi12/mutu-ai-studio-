@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Library, Music, Settings, X, Archive, Loader2, DownloadCloud } from 'lucide-react';
+import { Library, Music, Settings, X, Archive, Loader2, DownloadCloud, Palette } from 'lucide-react';
 import AudioLibrary from './AudioLibrary';
 import { useSettingsStore } from '../store/useSettingsStore';
 import clsx from 'clsx';
@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 
 export default function Sidebar() {
-  const { setSettingsOpen, isSidebarOpen, setSidebarOpen } = useSettingsStore();
+  const { setSettingsOpen, isSidebarOpen, setSidebarOpen, accentColor, setAccentColor } = useSettingsStore();
   const [hasAudios, setHasAudios] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -82,6 +82,35 @@ export default function Sidebar() {
         <AudioLibrary />
       </div>
 
+      {/* Customization Section */}
+      <div className="p-4 border-t border-[var(--color-glass-border)]">
+        <div className="flex items-center gap-2 mb-3 text-[var(--color-text-secondary)]">
+          <Palette size={16} />
+          <span className="text-xs font-bold uppercase tracking-widest">Theme Sync</span>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {['#00f3ff', '#a855f7', '#22c55e'].map((color) => (
+            <button
+              key={color}
+              onClick={() => setAccentColor(color)}
+              className={clsx(
+                "h-8 w-8 rounded-full border-2 shrink-0 transition-all",
+                accentColor === color 
+                  ? "border-[var(--color-text-primary)] scale-110 shadow-[0_0_10px_var(--accent-primary)]" 
+                  : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
+              )}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+          <button 
+            onClick={() => setSettingsOpen(true)}
+            className="h-8 w-8 rounded-full border border-dashed border-[var(--color-text-secondary)] flex items-center justify-center shrink-0 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] transition-all"
+          >
+            <span className="text-xs">+</span>
+          </button>
+        </div>
+      </div>
+
       {hasAudios && (
         <div className="p-2 space-y-2">
           <button
@@ -133,24 +162,26 @@ export default function Sidebar() {
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 w-80 border-r border-[var(--color-glass-border)] lg:hidden"
-            >
-              {sidebarContent}
-            </motion.aside>
-          </>
+          <motion.div
+            key="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          />
+        )}
+        {isSidebarOpen && (
+          <motion.aside
+            key="sidebar"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 left-0 z-50 w-80 border-r border-[var(--color-glass-border)] lg:hidden"
+          >
+            {sidebarContent}
+          </motion.aside>
         )}
       </AnimatePresence>
     </>

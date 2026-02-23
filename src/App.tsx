@@ -4,13 +4,18 @@ import AudioPlayer from './components/AudioPlayer';
 import SettingsOverlay from './components/SettingsOverlay';
 import SplashScreen from './components/SplashScreen';
 import { useSettingsStore } from './store/useSettingsStore';
+import { useDynamicTheme } from '@/src/hooks/useDynamicTheme.ts';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { IdentityProvider } from './context/IdentityContext';
 
 export default function App() {
   const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
   const [showSplash, setShowSplash] = useState(true);
+
+  // Initialize dynamic theme and icon swapping
+  useDynamicTheme();
 
   useEffect(() => {
     // Simulate loading time
@@ -21,7 +26,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <IdentityProvider>
       <AnimatePresence>
         {showSplash && <SplashScreen onComplete={() => {}} />}
       </AnimatePresence>
@@ -39,7 +44,7 @@ export default function App() {
               >
                 <Menu size={20} />
               </button>
-              <span className="font-bold text-[var(--accent-primary)] text-sm">MUTU</span>
+              <span className="font-bold text-[var(--accent-primary)] text-sm">Mutu Audio Studio</span>
             </div>
 
             <button 
@@ -70,6 +75,6 @@ export default function App() {
           <SettingsOverlay />
         </main>
       </div>
-    </>
+    </IdentityProvider>
   );
 }
