@@ -44,7 +44,7 @@ export default function App() {
               >
                 <Menu size={20} />
               </button>
-              <span className="font-bold text-[var(--accent-primary)] text-sm">MUTU</span>
+              <span className="font-bold text-[var(--accent-primary)] text-sm">Mutu Audio Studio</span>
             </div>
 
             <button 

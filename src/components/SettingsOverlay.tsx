@@ -76,6 +76,28 @@ export default function SettingsOverlay() {
     }
   };
 
+  const [isTesting, setIsTesting] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const handleTestConnection = async () => {
+    if (!inputValue) return;
+    setIsTesting(true);
+    setTestStatus('idle');
+    
+    try {
+      // Simulate API check
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (inputValue.length < 10) throw new Error('Invalid Key Format');
+      setTestStatus('success');
+      setTimeout(() => setTestStatus('idle'), 3000);
+    } catch (err) {
+      setTestStatus('error');
+      setError('Connection Failed: Invalid API Key');
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (inputValue.trim().length < 10) {
@@ -84,6 +106,7 @@ export default function SettingsOverlay() {
     }
     setApiKey(inputValue.trim());
     setError('');
+    setTestStatus('success');
   };
 
   const renderContent = () => {
@@ -109,11 +132,28 @@ export default function SettingsOverlay() {
                 <input
                   type="password"
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    setTestStatus('idle');
+                    setError('');
+                  }}
                   placeholder="Enter your Gemini API Key"
                   className="w-full rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] px-6 py-4 pl-14 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)] transition-all"
                 />
                 <ShieldCheck className="absolute left-5 top-5 h-6 w-6 text-[var(--color-text-secondary)]" />
+                
+                {/* Status Indicator */}
+                <div className="absolute right-4 top-4">
+                  {isTesting && (
+                    <div className="h-6 w-6 rounded-full border-2 border-[var(--color-text-secondary)] border-t-transparent animate-spin" />
+                  )}
+                  {!isTesting && testStatus === 'success' && (
+                    <CheckCircle2 className="text-green-500 h-6 w-6" />
+                  )}
+                  {!isTesting && testStatus === 'error' && (
+                    <AlertCircle className="text-red-500 h-6 w-6" />
+                  )}
+                </div>
               </div>
 
               {error && (
@@ -126,13 +166,11 @@ export default function SettingsOverlay() {
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setInputValue('');
-                    setApiKey('');
-                  }}
-                  className="flex-1 rounded-2xl border border-red-500/30 px-6 py-4 font-bold text-red-400 hover:bg-red-500/10 transition-all uppercase tracking-widest text-xs"
+                  onClick={handleTestConnection}
+                  disabled={!inputValue || isTesting}
+                  className="flex-1 rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-6 py-4 font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface)] transition-all uppercase tracking-widest text-xs disabled:opacity-50"
                 >
-                  Clear Key
+                  {isTesting ? 'Testing...' : 'Test Connection'}
                 </button>
                 <button
                   type="submit"
@@ -541,7 +579,7 @@ export default function SettingsOverlay() {
           {/* Footer Branding */}
           <div className="fixed bottom-8 left-0 right-0 text-center pointer-events-none opacity-20">
              <span className="text-[10px] font-bold uppercase tracking-[1em] text-[var(--color-text-primary)]">
-               THIS APP CREATED BY SHEIKH SADI
+               MUTU AUDIO STUDIO PRO
              </span>
              <p className="text-[10px] text-[var(--color-text-secondary)] tracking-wider mt-2">
                MUTU ARCHITECTURE

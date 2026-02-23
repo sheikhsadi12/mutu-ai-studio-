@@ -55,18 +55,16 @@ export const IdentityProvider: React.FC<IdentityProviderProps> = ({ children }) 
 
   // Effect: Handle Sync Logic
   useEffect(() => {
-    if (syncEnabled && logoColor !== accentColor) {
-      setLogoColor(accentColor);
-    }
+    const currentLogo = syncEnabled ? accentColor : logoColor;
+    updateFavicon(currentLogo);
   }, [accentColor, syncEnabled, logoColor]);
-
-  // Effect: Update Favicon
-  useEffect(() => {
-    updateFavicon(logoColor);
-  }, [logoColor]);
 
   // Helper to update favicon
   const updateFavicon = (color: string) => {
+    // In a real production build with assets, this would map to:
+    // const iconPath = `/icons/logo-${color.replace('#', '')}.png`;
+    // But for this dynamic demo, we generate the SVG on the fly.
+    
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="45" fill="${color}" />
