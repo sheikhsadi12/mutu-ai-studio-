@@ -1,114 +1,103 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 interface IdentityContextType {
-  logoColor: string;
-  setLogoColor: (color: string) => void;
+  currentLogoColor: string;
   syncEnabled: boolean;
+  logoDesign: string;
+  setLogoColor: (color: string) => void;
   setSyncEnabled: (enabled: boolean) => void;
-  themeColor: string; // Alias for accentColor from store
-  setThemeColor: (color: string) => void; // Alias for setAccentColor from store
+  setLogoDesign: (design: string) => void;
+  triggerPulse: () => void;
+  isPulsing: boolean;
 }
 
 const IdentityContext = createContext<IdentityContextType | undefined>(undefined);
 
-export const useAppIdentity = () => {
-  const context = useContext(IdentityContext);
-  if (!context) {
-    throw new Error('useAppIdentity must be used within an IdentityProvider');
-  }
-  return context;
-};
-
-interface IdentityProviderProps {
-  children: ReactNode;
-}
-
-export const IdentityProvider: React.FC<IdentityProviderProps> = ({ children }) => {
-  const { accentColor, setAccentColor } = useSettingsStore();
-  
-  // Initialize state from localStorage or defaults
-  const [logoColor, setLogoColorState] = useState<string>(() => {
-    return localStorage.getItem('currentLogoColor') || accentColor || '#00f3ff';
+export const IdentityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { accentColor } = useSettingsStore();
+  const [currentLogoColor, setCurrentLogoColor] = useState<string>(() => {
+    return localStorage.getItem('currentLogoColor') || '#00f3ff';
   });
-  
-  const [syncEnabled, setSyncEnabledState] = useState<boolean>(() => {
-    const stored = localStorage.getItem('syncEnabled');
-    return stored !== null ? stored === 'true' : true;
+  const [syncEnabled, setSyncEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('syncEnabled');
+    return saved === null ? true : saved === 'true';
   });
+  const [logoDesign, setLogoDesignState] = useState<string>(() => {
+    return localStorage.getItem('logoDesign') || 'sparkles';
+  });
+  const [isPulsing, setIsPulsing] = useState(false);
 
-  // Sync state setters with localStorage
-  const setLogoColor = (color: string) => {
-    setLogoColorState(color);
-    localStorage.setItem('currentLogoColor', color);
-  };
-
-  const setSyncEnabled = (enabled: boolean) => {
-    setSyncEnabledState(enabled);
-    localStorage.setItem('syncEnabled', String(enabled));
+  const updateIdentity = useCallback((color: string) => {
+    // Update CSS Variables
+    document.documentElement.style.setProperty('--accent-glow', color);
     
-    // If enabling sync, immediately sync logo to theme
-    if (enabled) {
-      setLogoColor(accentColor);
-    }
-  };
+    // Update Favicon
+    const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+    const appleLink: HTMLLinkElement | null = document.querySelector("link[rel*='apple-touch-icon']");
+    
+    let iconName = 'cyan';
+    if (color === '#a855f7') iconName = 'purple';
+    if (color === '#22c55e') iconName = 'green';
+    if (color === '#eab308') iconName = 'gold';
+    
+    const iconPath = `/icons/${iconName}-icon.svg`;
+    
+    if (link) link.href = iconPath;
+    if (appleLink) appleLink.href = iconPath;
+  }, []);
 
-  // Effect: Handle Sync Logic
   useEffect(() => {
-    const currentLogo = syncEnabled ? accentColor : logoColor;
-    updateFavicon(currentLogo);
-  }, [accentColor, syncEnabled, logoColor]);
-
-  // Helper to update favicon
-  const updateFavicon = (color: string) => {
-    // In a real production build with assets, this would map to:
-    // const iconPath = `/icons/logo-${color.replace('#', '')}.png`;
-    // But for this dynamic demo, we generate the SVG on the fly.
+    const colorToUse = syncEnabled ? accentColor : currentLogoColor;
+    updateIdentity(colorToUse);
     
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" fill="${color}" />
-        <path d="M30 50 L45 65 L70 35" stroke="white" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-    `.trim();
-    
-    const encodedSvg = encodeURIComponent(svg);
-    const dataUri = `data:image/svg+xml,${encodedSvg}`;
+    localStorage.setItem('currentLogoColor', currentLogoColor);
+    localStorage.setItem('syncEnabled', syncEnabled.toString());
+    localStorage.setItem('logoDesign', logoDesign);
+    localStorage.setItem('currentThemeColor', accentColor);
+  }, [accentColor, currentLogoColor, syncEnabled, logoDesign, updateIdentity]);
 
-    // Update standard icon
-    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = dataUri;
-
-    // Update apple-touch-icon
-    let appleLink = document.querySelector("link[rel~='apple-touch-icon']") as HTMLLinkElement;
-    if (!appleLink) {
-      appleLink = document.createElement('link');
-      appleLink.rel = 'apple-touch-icon';
-      document.head.appendChild(appleLink);
-    }
-    appleLink.href = dataUri;
+  const triggerPulse = () => {
+    setIsPulsing(true);
+    setTimeout(() => setIsPulsing(false), 1000);
   };
 
-  const value = {
-    logoColor,
-    setLogoColor: (color: string) => {
-      if (syncEnabled) return; // Prevent manual change if sync is on
-      setLogoColor(color);
-    },
-    syncEnabled,
-    setSyncEnabled,
-    themeColor: accentColor,
-    setThemeColor: setAccentColor
+  const setLogoColor = (color: string) => {
+    setCurrentLogoColor(color);
+    triggerPulse();
+  };
+
+  const handleSetSyncEnabled = (enabled: boolean) => {
+    setSyncEnabled(enabled);
+    triggerPulse();
+  };
+
+  const setLogoDesign = (design: string) => {
+    setLogoDesignState(design);
+    triggerPulse();
   };
 
   return (
-    <IdentityContext.Provider value={value}>
+    <IdentityContext.Provider value={{ 
+      currentLogoColor, 
+      syncEnabled, 
+      logoDesign,
+      setLogoColor, 
+      setSyncEnabled: handleSetSyncEnabled,
+      setLogoDesign,
+      triggerPulse,
+      isPulsing
+    }}>
       {children}
+      {isPulsing && <div className="pulse-effect" />}
     </IdentityContext.Provider>
   );
+};
+
+export const useAppIdentity = () => {
+  const context = useContext(IdentityContext);
+  if (context === undefined) {
+    throw new Error('useAppIdentity must be used within an IdentityProvider');
+  }
+  return context;
 };

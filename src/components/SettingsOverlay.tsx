@@ -1,9 +1,18 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Key, ShieldCheck, AlertCircle, Palette, Cpu, Moon, Sun, ChevronLeft, Settings2, Eye, EyeOff, Pipette, Plus, CheckCircle2, Fingerprint } from 'lucide-react';
+import { X, Key, ShieldCheck, AlertCircle, Palette, Cpu, Moon, Sun, ChevronLeft, Settings2, Eye, EyeOff, Pipette, Plus, CheckCircle2, Fingerprint, Sparkles, Zap, Music, Disc, Waves, Mic } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAppIdentity } from '../context/IdentityContext';
 import clsx from 'clsx';
+
+const LOGO_DESIGNS = [
+  { id: 'sparkles', icon: Sparkles, name: 'Sparkles' },
+  { id: 'music', icon: Music, name: 'Audio' },
+  { id: 'zap', icon: Zap, name: 'Energy' },
+  { id: 'disc', icon: Disc, name: 'Vinyl' },
+  { id: 'waves', icon: Waves, name: 'Waves' },
+  { id: 'mic', icon: Mic, name: 'Studio' },
+];
 
 const ACCENT_COLORS = [
   { name: 'Neon Cyan', value: '#00f3ff' },
@@ -14,21 +23,13 @@ const ACCENT_COLORS = [
   { name: 'Electric Blue', value: '#3b82f6' },
   { name: 'Crimson Red', value: '#ef4444' },
   { name: 'Golden Yellow', value: '#eab308' },
-  { name: 'Mint Frost', value: '#2dd4bf' },
-  { name: 'Lavender Haze', value: '#818cf8' },
-  { name: 'Rose Gold', value: '#fb7185' },
-  { name: 'Deep Sea', value: '#0369a1' },
-  { name: 'Emerald', value: '#059669' },
-  { name: 'Amber', value: '#d97706' },
-  { name: 'Slate', value: '#475569' },
-  { name: 'Midnight', value: '#1e293b' },
-  { name: 'Iridescent Black', value: '#1a1a1a' },
-  { name: 'Royal Indigo', value: '#4338ca' },
-  { name: 'Sunset Rose', value: '#be123c' },
-  { name: 'Forest Moss', value: '#166534' },
-  { name: 'Oceanic Teal', value: '#0f766e' },
-  { name: 'Volcanic Ash', value: '#334155' },
-  { name: 'Stellar White', value: '#f8fafc' },
+];
+
+const IDENTITY_ICONS = [
+  { name: 'Cyan', value: '#00f3ff', icon: 'cyan' },
+  { name: 'Purple', value: '#a855f7', icon: 'purple' },
+  { name: 'Green', value: '#22c55e', icon: 'green' },
+  { name: 'Gold', value: '#eab308', icon: 'gold' },
 ];
 
 export default function SettingsOverlay() {
@@ -40,62 +41,36 @@ export default function SettingsOverlay() {
     accentColor, setAccentColor
   } = useSettingsStore();
 
-  const { logoColor, setLogoColor, syncEnabled, setSyncEnabled } = useAppIdentity();
+  const { 
+    currentLogoColor, 
+    syncEnabled, 
+    logoDesign,
+    setLogoColor, 
+    setSyncEnabled,
+    setLogoDesign,
+    triggerPulse 
+  } = useAppIdentity();
 
   const [inputValue, setInputValue] = useState(apiKey || '');
   const [error, setError] = useState('');
-  const [showAllColors, setShowAllColors] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isSettingsOpen && !apiKey && !activeSettingsPage) {
-      setActiveSettingsPage('api');
+      // Allow user to explore settings even without API key
     }
   }, [isSettingsOpen, apiKey, activeSettingsPage, setActiveSettingsPage]);
 
-  // Handle History API for back button
+  // Apply Theme and Accent Color to DOM
   useEffect(() => {
-    const handlePopState = () => {
-      if (activeSettingsPage) {
-        setActiveSettingsPage(null);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeSettingsPage, setActiveSettingsPage]);
+    document.documentElement.setAttribute('data-theme', themeMode);
+    document.documentElement.style.setProperty('--accent-primary', accentColor);
+    const dimColor = accentColor.startsWith('#') ? `${accentColor}1a` : accentColor;
+    document.documentElement.style.setProperty('--accent-dim', dimColor);
+  }, [themeMode, accentColor]);
 
   const closePage = () => {
-    if (activeSettingsPage) {
-      if (window.history.state?.settingsPage) {
-        window.history.back();
-      } else {
-        setActiveSettingsPage(null);
-      }
-    } else {
-      setSettingsOpen(false);
-    }
-  };
-
-  const [isTesting, setIsTesting] = useState(false);
-  const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-  const handleTestConnection = async () => {
-    if (!inputValue) return;
-    setIsTesting(true);
-    setTestStatus('idle');
-    
-    try {
-      // Simulate API check
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      if (inputValue.length < 10) throw new Error('Invalid Key Format');
-      setTestStatus('success');
-      setTimeout(() => setTestStatus('idle'), 3000);
-    } catch (err) {
-      setTestStatus('error');
-      setError('Connection Failed: Invalid API Key');
-    } finally {
-      setIsTesting(false);
-    }
+    setActiveSettingsPage(null);
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -106,7 +81,6 @@ export default function SettingsOverlay() {
     }
     setApiKey(inputValue.trim());
     setError('');
-    setTestStatus('success');
   };
 
   const renderContent = () => {
@@ -118,11 +92,11 @@ export default function SettingsOverlay() {
             animate={{ opacity: 1, x: 0 }}
             className="max-w-xl w-full"
           >
-            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30">
+            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30">
               <Key size={32} />
             </div>
-            <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">API Configuration</h3>
-            <p className="text-[var(--color-text-secondary)] mb-8 leading-relaxed">
+            <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4 font-display italic">API Configuration</h3>
+            <p className="text-[var(--color-text-secondary)] mb-8 leading-relaxed font-mono text-xs uppercase tracking-wider">
               Enter your Gemini API Key to activate the Neural Speech Engine. 
               The key is stored locally on your device and never leaves your browser.
             </p>
@@ -132,28 +106,11 @@ export default function SettingsOverlay() {
                 <input
                   type="password"
                   value={inputValue}
-                  onChange={(e) => {
-                    setInputValue(e.target.value);
-                    setTestStatus('idle');
-                    setError('');
-                  }}
+                  onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Enter your Gemini API Key"
-                  className="w-full rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] px-6 py-4 pl-14 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-neon-cyan)] focus:outline-none focus:ring-1 focus:ring-[var(--color-neon-cyan)] transition-all"
+                  className="w-full rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] px-6 py-4 pl-14 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] transition-all font-mono"
                 />
                 <ShieldCheck className="absolute left-5 top-5 h-6 w-6 text-[var(--color-text-secondary)]" />
-                
-                {/* Status Indicator */}
-                <div className="absolute right-4 top-4">
-                  {isTesting && (
-                    <div className="h-6 w-6 rounded-full border-2 border-[var(--color-text-secondary)] border-t-transparent animate-spin" />
-                  )}
-                  {!isTesting && testStatus === 'success' && (
-                    <CheckCircle2 className="text-green-500 h-6 w-6" />
-                  )}
-                  {!isTesting && testStatus === 'error' && (
-                    <AlertCircle className="text-red-500 h-6 w-6" />
-                  )}
-                </div>
               </div>
 
               {error && (
@@ -166,133 +123,22 @@ export default function SettingsOverlay() {
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={handleTestConnection}
-                  disabled={!inputValue || isTesting}
-                  className="flex-1 rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-6 py-4 font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface)] transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+                  onClick={() => {
+                    setInputValue('');
+                    setApiKey('');
+                  }}
+                  className="flex-1 rounded-2xl border border-red-500/30 px-6 py-4 font-bold text-red-400 hover:bg-red-500/10 transition-all uppercase tracking-widest text-[10px]"
                 >
-                  {isTesting ? 'Testing...' : 'Test Connection'}
+                  Clear Key
                 </button>
                 <button
                   type="submit"
-                  className="flex-[2] rounded-2xl bg-[var(--color-neon-cyan)] px-6 py-4 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest text-xs shadow-[0_0_20px_var(--accent-dim)]"
+                  className="flex-[2] rounded-2xl bg-[var(--accent-primary)] px-6 py-4 font-bold text-[var(--color-text-on-accent)] transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest text-[10px] shadow-[0_0_20px_var(--accent-dim)]"
                 >
                   Save Configuration
                 </button>
               </div>
             </form>
-          </motion.div>
-        );
-
-      case 'identity':
-        return (
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="max-w-xl w-full"
-          >
-            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30">
-              <Fingerprint size={32} />
-            </div>
-            <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">Identity Studio</h3>
-            <p className="text-[var(--color-text-secondary)] mb-8 leading-relaxed">
-              Customize the application identity and branding. Sync the app icon with your theme or choose a custom signature color.
-            </p>
-
-            {/* Live Preview Card */}
-            <div className="mb-8 p-8 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] flex flex-col items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-surface)] to-[var(--color-bg-hover)] opacity-50" />
-              
-              <motion.div
-                className="relative z-10 w-32 h-32 rounded-[2rem] shadow-2xl flex items-center justify-center border border-white/10 backdrop-blur-xl"
-                animate={{
-                  backgroundColor: `${logoColor}20`, // 20% opacity
-                  borderColor: `${logoColor}40`,
-                  boxShadow: `0 20px 40px -10px ${logoColor}30`
-                }}
-                transition={{ duration: 0.5 }}
-              >
-                <motion.svg 
-                  viewBox="0 0 100 100" 
-                  className="w-20 h-20"
-                  animate={{ fill: logoColor }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <circle cx="50" cy="50" r="45" fillOpacity="0.2" />
-                  <path d="M30 50 L45 65 L70 35" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                </motion.svg>
-              </motion.div>
-              
-              <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">Live App Icon Preview</p>
-            </div>
-
-            {/* Sync Toggle */}
-            <div className="mb-8 flex items-center justify-between p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
-              <div>
-                <h4 className="text-sm font-bold text-[var(--color-text-primary)]">Sync Logo with Theme</h4>
-                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-widest mt-1">
-                  Automatically match app icon
-                </p>
-              </div>
-              <button
-                onClick={() => setSyncEnabled(!syncEnabled)}
-                className={clsx(
-                  "relative h-8 w-14 rounded-full transition-colors duration-300 focus:outline-none",
-                  syncEnabled ? "bg-[var(--color-neon-cyan)]" : "bg-[var(--color-bg-hover)] border border-[var(--color-glass-border)]"
-                )}
-              >
-                <motion.div
-                  className="absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-md"
-                  animate={{ x: syncEnabled ? 24 : 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              </button>
-            </div>
-
-            {/* Manual Selector */}
-            <AnimatePresence>
-              {!syncEnabled && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <h4 className="mb-6 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Custom Signature</h4>
-                  <div className="grid grid-cols-4 gap-4">
-                    {[
-                      { name: 'Cyan', value: '#00f3ff' },
-                      { name: 'Purple', value: '#a855f7' },
-                      { name: 'Green', value: '#22c55e' },
-                      { name: 'Gold', value: '#eab308' }
-                    ].map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => setLogoColor(color.value)}
-                        className={clsx(
-                          "group relative flex flex-col items-center gap-3 transition-all p-4 rounded-2xl border bg-[var(--color-bg-surface)]",
-                          logoColor === color.value 
-                            ? "border-[var(--color-text-primary)] bg-[var(--color-bg-hover)]" 
-                            : "border-[var(--color-glass-border)] hover:border-[var(--color-text-secondary)]"
-                        )}
-                      >
-                        <div 
-                          className="h-8 w-8 rounded-full shadow-lg transition-transform group-hover:scale-110"
-                          style={{ backgroundColor: color.value }}
-                        />
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">
-                          {color.name}
-                        </span>
-                        {logoColor === color.value && (
-                          <div className="absolute top-2 right-2 text-[var(--color-text-primary)]">
-                            <CheckCircle2 size={12} />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         );
 
@@ -303,43 +149,43 @@ export default function SettingsOverlay() {
             animate={{ opacity: 1, x: 0 }}
             className="max-w-2xl w-full space-y-12"
           >
-            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30">
+            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30">
               <Palette size={32} />
             </div>
             
             <section>
-              <h4 className="mb-6 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Theme Mode</h4>
+              <h4 className="mb-6 text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.4em]">Theme Mode</h4>
               <div className="grid grid-cols-2 gap-6">
                 <button
                   onClick={() => setThemeMode('dark')}
                   className={clsx(
                     "flex flex-col items-center justify-center gap-4 rounded-3xl border p-8 transition-all",
                     themeMode === 'dark'
-                      ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)] text-[var(--color-text-primary)]"
+                      ? "border-[var(--accent-primary)] bg-[var(--accent-dim)] text-[var(--color-text-primary)]"
                       : "border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
                   )}
                 >
                   <Moon size={32} className="shrink-0" />
-                  <span className="font-bold uppercase tracking-widest text-xs">Dark Mode</span>
+                  <span className="font-bold uppercase tracking-widest text-[10px]">Dark Mode</span>
                 </button>
                 <button
                   onClick={() => setThemeMode('light')}
                   className={clsx(
                     "flex flex-col items-center justify-center gap-4 rounded-3xl border p-8 transition-all",
                     themeMode === 'light'
-                      ? "border-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)] text-[var(--color-text-primary)]"
+                      ? "border-[var(--accent-primary)] bg-[var(--accent-dim)] text-[var(--color-text-primary)]"
                       : "border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
                   )}
                 >
                   <Sun size={32} className="shrink-0" />
-                  <span className="font-bold uppercase tracking-widest text-xs">Light Mode</span>
+                  <span className="font-bold uppercase tracking-widest text-[10px]">Light Mode</span>
                 </button>
               </div>
             </section>
 
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h4 className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Accent Color</h4>
+                <h4 className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.4em]">Accent Color</h4>
                 <div className="flex items-center gap-2 bg-[var(--accent-dim)] px-3 py-1 rounded-full border border-[var(--accent-primary)]/20">
                   <div 
                     className="h-2 w-2 rounded-full shadow-[0_0_8px_var(--accent-primary)]"
@@ -351,11 +197,14 @@ export default function SettingsOverlay() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-4 p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
                 {ACCENT_COLORS.map((color) => (
                   <button
                     key={color.value}
-                    onClick={() => setAccentColor(color.value)}
+                    onClick={() => {
+                      setAccentColor(color.value);
+                      triggerPulse();
+                    }}
                     className={clsx(
                       "group relative flex flex-col items-center gap-3 transition-all",
                       accentColor === color.value ? "scale-110" : "opacity-40 hover:opacity-100 hover:scale-105"
@@ -368,13 +217,9 @@ export default function SettingsOverlay() {
                       )}
                       style={{ backgroundColor: color.value }}
                     />
-                    <span className="text-[8px] font-bold uppercase tracking-tighter text-center w-full truncate text-[var(--color-text-primary)]">
-                      {color.name}
-                    </span>
                   </button>
                 ))}
                 
-                {/* Custom Color Picker */}
                 <button
                   onClick={() => colorInputRef.current?.click()}
                   className={clsx(
@@ -391,73 +236,152 @@ export default function SettingsOverlay() {
                   >
                     <Plus size={16} className="text-[var(--color-text-primary)]" />
                   </div>
-                  <span className="text-[8px] font-bold uppercase tracking-tighter text-center w-full truncate text-[var(--color-text-primary)]">
-                    Custom
-                  </span>
                   <input 
                     ref={colorInputRef}
                     type="color" 
                     className="sr-only" 
                     value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
+                    onChange={(e) => {
+                      setAccentColor(e.target.value);
+                      triggerPulse();
+                    }}
                   />
                 </button>
-              </div>
-            </section>
-
-            <section>
-              <h4 className="mb-6 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">More Options</h4>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                      <Eye size={20} />
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-[var(--color-text-primary)]">High Contrast Mode</h5>
-                      <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-widest">Enhanced visibility</p>
-                    </div>
-                  </div>
-                  <div className="h-6 w-12 rounded-full bg-[var(--color-bg-hover)] border border-[var(--color-glass-border)] relative cursor-not-allowed opacity-50">
-                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--color-text-secondary)]/20" />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                      <Settings2 size={20} />
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-[var(--color-text-primary)]">Experimental UI</h5>
-                      <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-widest">Beta features</p>
-                    </div>
-                  </div>
-                  <div className="h-6 w-12 rounded-full bg-[var(--color-bg-hover)] border border-[var(--color-glass-border)] relative cursor-not-allowed opacity-50">
-                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-[var(--color-text-secondary)]/20" />
-                  </div>
-                </div>
               </div>
             </section>
           </motion.div>
         );
 
-      case 'model':
+      case 'identity':
+        const SelectedLogoIcon = LOGO_DESIGNS.find(d => d.id === logoDesign)?.icon || Sparkles;
         return (
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="max-w-xl w-full text-center py-12"
+            className="max-w-4xl w-full space-y-12"
           >
-            <div className="mx-auto mb-8 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] border border-[var(--color-neon-cyan)]/30 shadow-[0_0_40px_var(--accent-dim)]">
-              <Cpu size={48} />
+            <div className="mb-8 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30">
+              <Fingerprint size={32} />
             </div>
-            <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">Neural Engine</h3>
-            <p className="text-[var(--color-text-secondary)] mb-8 leading-relaxed">
-              Advanced model parameters including Temperature, Top-P, and custom system instructions are currently being calibrated for the next deployment.
-            </p>
-            <div className="inline-block px-6 py-2 rounded-full border border-[var(--color-neon-cyan)]/30 bg-[var(--color-neon-cyan-dim)] text-[var(--color-neon-cyan)] text-xs font-bold uppercase tracking-widest">
-              System Calibrating...
+
+            <h3 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4 font-display italic">Identity Studio</h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              {/* Left Column: Preview & Designs */}
+              <div className="lg:col-span-7 space-y-12">
+                <section>
+                  <h4 className="mb-6 text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.4em]">Logo Design</h4>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                    {LOGO_DESIGNS.map((design) => (
+                      <button
+                        key={design.id}
+                        onClick={() => setLogoDesign(design.id)}
+                        className={clsx(
+                          "flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all",
+                          logoDesign === design.id 
+                            ? "border-[var(--accent-primary)] bg-[var(--accent-dim)] text-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-dim)]" 
+                            : "border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
+                        )}
+                      >
+                        <design.icon size={24} />
+                        <span className="text-[8px] font-bold uppercase tracking-tighter">{design.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="mb-6 text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.4em]">Live Preview</h4>
+                  <div className="aspect-[21/9] rounded-[2.5rem] bg-[var(--color-bg-surface)] border border-[var(--color-glass-border)] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-dim)] to-transparent opacity-50" />
+                    <div className="flex items-center gap-12 relative z-10">
+                      {/* App Icon Preview */}
+                      <motion.div 
+                        key={`${currentLogoColor}-${logoDesign}`}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="w-32 h-32 rounded-[2.5rem] shadow-[0_0_50px_var(--accent-dim)] flex items-center justify-center bg-[var(--color-cyber-black)] border border-[var(--accent-primary)]/30"
+                      >
+                        <div 
+                          className="w-16 h-16 rounded-full blur-xl absolute"
+                          style={{ backgroundColor: syncEnabled ? accentColor : currentLogoColor }}
+                        />
+                        <SelectedLogoIcon 
+                          size={48} 
+                          style={{ color: syncEnabled ? accentColor : currentLogoColor }}
+                          className="relative z-10"
+                        />
+                      </motion.div>
+
+                      {/* Text Preview */}
+                      <div className="hidden sm:block">
+                        <h2 className="text-4xl font-bold text-[var(--color-text-primary)] font-display italic leading-none mb-2">Moto Studio</h2>
+                        <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-[0.5em]">Studio Pro</p>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-6 left-0 right-0 text-center">
+                      <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--color-text-secondary)]">Identity System Preview</span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Right Column: Controls & Colors */}
+              <div className="lg:col-span-5 space-y-12">
+                <section>
+                  <h4 className="mb-6 text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.4em]">Color Sync</h4>
+                  <button
+                    onClick={() => setSyncEnabled(!syncEnabled)}
+                    className={clsx(
+                      "w-full flex items-center justify-between p-6 rounded-3xl border transition-all",
+                      syncEnabled 
+                        ? "border-[var(--accent-primary)] bg-[var(--accent-dim)]" 
+                        : "border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <Zap size={20} className={syncEnabled ? "text-[var(--accent-primary)]" : "text-[var(--color-text-secondary)]"} />
+                      <div className="text-left">
+                        <h5 className="text-sm font-bold text-[var(--color-text-primary)]">Sync with Theme</h5>
+                        <p className="text-[9px] text-[var(--color-text-secondary)] uppercase tracking-widest">Matches app accent color</p>
+                      </div>
+                    </div>
+                    <div className={clsx(
+                      "h-6 w-12 rounded-full relative transition-all",
+                      syncEnabled ? "bg-[var(--accent-primary)]" : "bg-[var(--color-bg-hover)]"
+                    )}>
+                      <motion.div 
+                        animate={{ x: syncEnabled ? 24 : 4 }}
+                        className="absolute top-1 h-4 w-4 rounded-full bg-white shadow-lg"
+                      />
+                    </div>
+                  </button>
+                </section>
+
+                <section className={clsx("transition-all", syncEnabled && "opacity-30 pointer-events-none grayscale")}>
+                  <h4 className="mb-6 text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.4em]">Manual Color</h4>
+                  <div className="grid grid-cols-4 gap-4 p-6 rounded-3xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]">
+                    {IDENTITY_ICONS.map((icon) => (
+                      <button
+                        key={icon.icon}
+                        onClick={() => setLogoColor(icon.value)}
+                        className={clsx(
+                          "group relative flex flex-col items-center transition-all",
+                          currentLogoColor === icon.value ? "scale-110" : "opacity-40 hover:opacity-100"
+                        )}
+                      >
+                        <div 
+                          className={clsx(
+                            "h-12 w-12 rounded-2xl border-2 transition-all flex items-center justify-center",
+                            currentLogoColor === icon.value ? "border-[var(--color-text-primary)] shadow-[0_0_15px_var(--accent-primary)]" : "border-transparent"
+                          )}
+                          style={{ backgroundColor: icon.value }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
             </div>
           </motion.div>
         );
@@ -467,62 +391,58 @@ export default function SettingsOverlay() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-2 gap-6"
+            className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             <button
               onClick={() => setActiveSettingsPage('api')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-8 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
-                <Key size={32} />
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
+                <Key size={28} />
               </div>
               <div className="text-center">
-                <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">API Config</h4>
-                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Neural Link</p>
+                <h4 className="text-[10px] font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">API Config</h4>
+                <p className="text-[8px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Neural Link</p>
               </div>
-              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
-            </button>
-
-            <button
-              onClick={() => setActiveSettingsPage('identity')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
-            >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
-                <Fingerprint size={32} />
-              </div>
-              <div className="text-center">
-                <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Identity</h4>
-                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Branding Studio</p>
-              </div>
-              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
             </button>
 
             <button
               onClick={() => setActiveSettingsPage('appearance')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-8 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
-                <Palette size={32} />
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
+                <Palette size={28} />
               </div>
               <div className="text-center">
-                <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Appearance</h4>
-                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">UI Calibration</p>
+                <h4 className="text-[10px] font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Appearance</h4>
+                <p className="text-[8px] text-[var(--color-text-secondary)] uppercase tracking-tighter">UI Calibration</p>
               </div>
-              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
             </button>
 
             <button
-              onClick={() => setActiveSettingsPage('model')}
-              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-10 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
+              onClick={() => setActiveSettingsPage('identity')}
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-8 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
-                <Cpu size={32} />
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
+                <Fingerprint size={28} />
               </div>
               <div className="text-center">
-                <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Neural Engine</h4>
-                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Model Tuning</p>
+                <h4 className="text-[10px] font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">App Icon</h4>
+                <p className="text-[8px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Branding</p>
               </div>
-              <div className="h-1 w-8 rounded-full bg-[var(--accent-primary)] opacity-20 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_var(--accent-primary)]" />
+            </button>
+
+            <button
+              onClick={() => setActiveSettingsPage('identity')}
+              className="group flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-8 transition-all hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-dim)]"
+            >
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--accent-dim)]">
+                <Cpu size={28} />
+              </div>
+              <div className="text-center">
+                <h4 className="text-[10px] font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-1">Logo Select</h4>
+                <p className="text-[8px] text-[var(--color-text-secondary)] uppercase tracking-tighter">Identity</p>
+              </div>
             </button>
           </motion.div>
         );
@@ -542,7 +462,7 @@ export default function SettingsOverlay() {
           {/* Header */}
           <div className="flex items-center justify-between mb-12 relative">
             <div className="flex items-center">
-              {activeSettingsPage && apiKey && (
+              {activeSettingsPage && (
                 <button 
                   onClick={closePage}
                   className="p-3 -ml-3 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
@@ -554,21 +474,19 @@ export default function SettingsOverlay() {
             
             <div className="absolute left-1/2 -translate-x-1/2">
               {apiKey && (
-                <div className="flex items-center gap-2.5 text-[var(--color-neon-cyan)] bg-[var(--color-neon-cyan-dim)] px-4 py-1.5 rounded-full border border-[var(--color-neon-cyan)]/30 shadow-[0_0_15px_var(--accent-dim)] whitespace-nowrap">
+                <div className="flex items-center gap-2.5 text-[var(--accent-primary)] bg-[var(--accent-dim)] px-4 py-1.5 rounded-full border border-[var(--accent-primary)]/30 shadow-[0_0_15px_var(--accent-dim)] whitespace-nowrap">
                   <CheckCircle2 size={14} className="shrink-0" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.1em]">System Active</span>
                 </div>
               )}
             </div>
 
-            {apiKey && !activeSettingsPage && (
-              <button 
-                onClick={() => setSettingsOpen(false)}
-                className="p-2 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
-              >
-                <X size={20} />
-              </button>
-            )}
+            <button 
+              onClick={() => setSettingsOpen(false)}
+              className="p-2 text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-all active:scale-90"
+            >
+              <X size={20} />
+            </button>
           </div>
 
           {/* Page Content */}
@@ -579,10 +497,10 @@ export default function SettingsOverlay() {
           {/* Footer Branding */}
           <div className="fixed bottom-8 left-0 right-0 text-center pointer-events-none opacity-20">
              <span className="text-[10px] font-bold uppercase tracking-[1em] text-[var(--color-text-primary)]">
-               MUTU AUDIO STUDIO PRO
+               THIS APP CREATED BY SHEIKH SADI
              </span>
              <p className="text-[10px] text-[var(--color-text-secondary)] tracking-wider mt-2">
-               MUTU ARCHITECTURE
+               MOTO ARCHITECTURE
              </p>
           </div>
         </motion.div>
