@@ -111,35 +111,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Actions Section */}
-      <div className="p-4 border-t border-[var(--color-glass-border)] space-y-2">
-        {hasAudios && (
-          <button
-            onClick={handleDownloadAll}
-            disabled={isDownloading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-bg-surface)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] hover:border-[var(--color-neon-cyan)] border border-transparent transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Archive size={16} />
-            )}
-            <span>{isDownloading ? 'Zipping...' : 'Download All (ZIP)'}</span>
-          </button>
-        )}
-        
-        {deferredPrompt && (
-          <button
-            onClick={handleInstallClick}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-neon-cyan-dim)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-neon-cyan)] hover:bg-[var(--color-neon-cyan)] hover:text-black border border-[var(--color-neon-cyan)]/30 transition-all active:scale-[0.98]"
-          >
-            <DownloadCloud size={16} />
-            <span>Install App</span>
-          </button>
-        )}
-      </div>
-
-
+      {hasAudios && (
         <div className="p-2 space-y-2">
           <button
             onClick={handleDownloadAll}
@@ -166,7 +138,17 @@ export default function Sidebar() {
         </div>
       )}
       
-
+      {!hasAudios && deferredPrompt && (
+        <div className="p-2">
+          <button
+            onClick={handleInstallClick}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-neon-cyan-dim)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-neon-cyan)] hover:bg-[var(--color-neon-cyan)] hover:text-black border border-[var(--color-neon-cyan)]/30 transition-all active:scale-[0.98]"
+          >
+            <DownloadCloud size={16} />
+            <span>Install App</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -180,24 +162,26 @@ export default function Sidebar() {
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 w-80 border-r border-[var(--color-glass-border)] lg:hidden"
-            >
-              {sidebarContent}
-            </motion.aside>
-          </>
+          <motion.div
+            key="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          />
+        )}
+        {isSidebarOpen && (
+          <motion.aside
+            key="sidebar"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 left-0 z-50 w-80 border-r border-[var(--color-glass-border)] lg:hidden"
+          >
+            {sidebarContent}
+          </motion.aside>
         )}
       </AnimatePresence>
     </>
