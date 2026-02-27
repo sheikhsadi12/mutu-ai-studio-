@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AudioFile } from '../lib/StorageService';
 
-export type VoiceName = 'Kore' | 'Fenrir' | 'Puck' | 'Charon' | 'Zephyr' | 'bn-BD-Neural2-A' | 'bn-BD-Neural2-B' | 'en-US-Neural2-F' | 'en-US-Neural2-G';
+export type VoiceName = 'Kore' | 'Fenrir' | 'Puck' | 'Charon' | 'Zephyr';
 
 interface SettingsState {
   apiKey: string | null;

@@ -97,57 +97,40 @@ class AudioEngine {
             },
           });
         } else {
-          // Standard TTS Mode with Advanced SSML
-          
-          // 1. Clean and SSML Construction
-          const cleanText = text.trim();
-          // Replace commas with 400ms break
-          let ssmlContent = cleanText.replace(/,/g, '<break time="400ms"/>');
-          // Replace full stops and daris with 900ms break
-          ssmlContent = ssmlContent.replace(/[.|।]/g, '<break time="900ms"/>');
-          
-          // Wrap in prosody and speak, add 1000ms break at end
-          const ssmlText = `<speak><prosody rate="0.92x" pitch="-1st">${ssmlContent}<break time="1000ms"/></prosody></speak>`;
+          // Standard TTS Mode
+          // Gemini TTS works best with clear instructions in plain text rather than SSML
+          const prompt = `Style: ${styleInstruction || 'Natural and clear'}. Text to speak: ${text}`;
 
-          // 2. Neural2 Voice Lockdown
-          let effectiveVoice = selectedVoice;
-          if (selectedVoice.startsWith('bn')) {
-            effectiveVoice = 'bn-BD-Neural2-A';
-          } else {
-            effectiveVoice = 'en-US-Neural2-F';
+          // 2. Gemini TTS Voice Selection
+          let effectiveVoice = 'Kore';
+          const validVoices = ['Kore', 'Fenrir', 'Puck', 'Charon', 'Zephyr'];
+          if (validVoices.includes(selectedVoice)) {
+            effectiveVoice = selectedVoice;
           }
 
-          return await ai.models.generateContentStream({
+          return await ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text: ssmlText }] }],
+            contents: [{ parts: [{ text: prompt }] }],
             config: {
               responseModalities: [Modality.AUDIO],
               speechConfig: {
                 voiceConfig: {
                   prebuiltVoiceConfig: { voiceName: effectiveVoice },
                 },
-                ...({
-                  audioConfig: {
-                    sampleRateHertz: 48000,
-                    effectsProfileId: ['headphone-class-device'],
-                    volumeGainDb: 0.0,
-                  },
-                } as any),
               },
             },
           });
         }
       };
 
-      const stream = await this.retry(generateStream);
+      const response = await this.retry(generateStream);
       this.startScheduler();
 
       let pendingBuffer: AudioBuffer | null = null;
 
-      for await (const chunk of stream) {
-        if (this.abortController.signal.aborted) break;
-
-        const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      // Handle both streaming and unary responses
+      const processPart = async (part: any) => {
+        const base64Audio = part.inlineData?.data;
         if (base64Audio) {
           const bytes = this.base64ToUint8(base64Audio);
           this.accumulatedBytes.push(bytes);
@@ -165,6 +148,23 @@ class AudioEngine {
               this.stopBuffering();
             }
           }
+        }
+      };
+
+      if ((response as any)[Symbol.asyncIterator]) {
+        // Streaming response
+        for await (const chunk of (response as any)) {
+          if (this.abortController?.signal.aborted) break;
+          const parts = chunk.candidates?.[0]?.content?.parts || [];
+          for (const part of parts) {
+            await processPart(part);
+          }
+        }
+      } else {
+        // Unary response
+        const parts = (response as any).candidates?.[0]?.content?.parts || [];
+        for (const part of parts) {
+          await processPart(part);
         }
       }
 

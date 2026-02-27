@@ -80,7 +80,7 @@ export default function Sidebar() {
       });
       
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `Mutu_Library_${Date.now()}.zip`);
+      saveAs(content, `Moto_Library_${Date.now()}.zip`);
     } finally {
       setIsDownloading(false);
     }

@@ -76,7 +76,7 @@ export default function AudioPlayer() {
     const blob = audioEngine.exportMp3();
     if (blob) {
       const id = crypto.randomUUID();
-      const filename = `Mutu_Recording_${Date.now()}.mp3`;
+      const filename = `Moto_Recording_${Date.now()}.mp3`;
       
       // 1. Save to Library
       await storageService.saveAudio({
@@ -102,7 +102,7 @@ export default function AudioPlayer() {
   const handleDownload = () => {
     const blob = audioEngine.exportMp3();
     if (blob) {
-      saveAs(blob, `Mutu_Recording_${Date.now()}.mp3`);
+      saveAs(blob, `Moto_Recording_${Date.now()}.mp3`);
     } else if (currentTrack) {
       saveAs(currentTrack.blob, `${currentTrack.title}.mp3`);
     }
@@ -153,7 +153,7 @@ export default function AudioPlayer() {
 
             {/* Cover Art */}
             <div className="flex-grow w-full rounded-2xl bg-gradient-to-br from-[var(--color-neon-cyan-dim)] to-transparent border border-[var(--color-glass-border)] flex items-center justify-center mb-4">
-              <p className="text-sm text-[var(--color-text-secondary)]">Mutu Cover Art</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Moto Cover Art</p>
             </div>
 
             {/* Track Info & Visualizer */}
