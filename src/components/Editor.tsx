@@ -1,6 +1,6 @@
 import { useState, useRef, ChangeEvent } from 'react';
 import { motion } from 'motion/react';
-import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X, Download } from 'lucide-react';
+import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X } from 'lucide-react';
 import clsx from 'clsx';
 import VoiceSelector from './VoiceSelector';
 import { audioEngine } from '../lib/AudioEngine';
@@ -10,7 +10,6 @@ import Toast, { ToastRef } from './Toast';
 export default function Editor() {
   const [text, setText] = useState('');
   const [styleInstruction, setStyleInstruction] = useState('');
-  const [hasGenerated, setHasGenerated] = useState(false);
   const { isGenerating, apiKey, setSidebarOpen, clonedVoiceData, setClonedVoiceData } = useSettingsStore();
   const toastRef = useRef<ToastRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -18,7 +17,6 @@ export default function Editor() {
   const handleClear = () => {
     setText('');
     setStyleInstruction('');
-    setHasGenerated(false);
   };
 
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -51,23 +49,8 @@ export default function Editor() {
 
     try {
       await audioEngine.generateAudio(text, styleInstruction);
-      setHasGenerated(true);
     } catch (error) {
       toastRef.current?.show("Synthesis Failed: Check API Key or Quota.");
-    }
-  };
-
-  const handleDownload = () => {
-    const blob = audioEngine.exportMp3();
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Generated_Audio_${new Date().getTime()}.mp3`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      toastRef.current?.show("No audio available to download.");
     }
   };
 
@@ -96,7 +79,7 @@ export default function Editor() {
         <div className="space-y-1.5">
           <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
             <Mic size={12} />
-            <span>Moto Voice Cloning</span>
+            <span>AI Voice Cloning</span>
           </label>
           <div className="relative group">
             <div className={clsx(
@@ -187,17 +170,7 @@ export default function Editor() {
           />
           
           {/* Action Bar */}
-          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-end gap-2">
-             {hasGenerated && (
-               <button
-                 onClick={handleDownload}
-                 disabled={isGenerating}
-                 className="flex items-center gap-2 rounded-xl border border-[var(--color-neon-cyan)] bg-transparent px-4 py-2 font-bold text-[var(--color-neon-cyan)] transition-all hover:bg-[var(--color-neon-cyan-dim)]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-               >
-                 <Download size={18} />
-                 <span>DOWNLOAD</span>
-               </button>
-             )}
+          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-end">
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating}

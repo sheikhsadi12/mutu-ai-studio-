@@ -1,39 +1,18 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Library, Music, Settings, X, Archive, Loader2, DownloadCloud, Palette, Fingerprint, Sparkles, Zap, Disc, Waves, Mic } from 'lucide-react';
+import { Library, Music, Settings, X, Archive, Loader2, DownloadCloud } from 'lucide-react';
 import AudioLibrary from './AudioLibrary';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useAppIdentity } from '../context/IdentityContext';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { storageService, AudioFile } from '../lib/StorageService';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 
-const LOGO_ICONS: Record<string, any> = {
-  sparkles: Sparkles,
-  music: Music,
-  zap: Zap,
-  disc: Disc,
-  waves: Waves,
-  mic: Mic,
-};
-
-const QUICK_COLORS = [
-  { name: 'Cyan', value: '#00f3ff' },
-  { name: 'Purple', value: '#a855f7' },
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Gold', value: '#eab308' },
-];
-
 export default function Sidebar() {
-  const { setSettingsOpen, isSidebarOpen, setSidebarOpen, accentColor, setAccentColor, setActiveSettingsPage } = useSettingsStore();
-  const { setLogoColor, triggerPulse, logoDesign, currentLogoColor, syncEnabled } = useAppIdentity();
+  const { setSettingsOpen, isSidebarOpen, setSidebarOpen } = useSettingsStore();
   const [hasAudios, setHasAudios] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  const SelectedIcon = LOGO_ICONS[logoDesign] || Sparkles;
-  const logoColor = syncEnabled ? 'var(--accent-primary)' : currentLogoColor;
 
   useEffect(() => {
     const checkAudios = async () => {
@@ -80,7 +59,7 @@ export default function Sidebar() {
       });
       
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `Moto_Library_${Date.now()}.zip`);
+      saveAs(content, `Mutu_Library_${Date.now()}.zip`);
     } finally {
       setIsDownloading(false);
     }
@@ -99,56 +78,8 @@ export default function Sidebar() {
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-[var(--color-cyber-black)]/95 backdrop-blur-2xl lg:bg-[var(--color-cyber-black)]/80 lg:backdrop-blur-md noise-overlay">
-      {/* App Logo Section */}
-      <div className="p-6 border-b border-[var(--color-glass-border)]">
-        <div className="flex items-center gap-4">
-          <div 
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-dim)] border border-[var(--accent-primary)]/30 shadow-[0_0_20px_var(--accent-dim)] transition-all"
-            style={{ color: logoColor }}
-          >
-            <SelectedIcon size={24} />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)] font-display italic leading-none">Moto Studio</h2>
-            <p className="text-[8px] text-[var(--color-text-secondary)] uppercase tracking-[0.4em] mt-1">Studio Pro</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-hidden flex flex-col">
         <AudioLibrary />
-      </div>
-
-      <div className="p-4 border-t border-[var(--color-glass-border)] bg-[var(--color-bg-surface)]/30">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-[9px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.3em]">Customization</h4>
-          <button 
-            onClick={() => {
-              setActiveSettingsPage('identity');
-              setSettingsOpen(true);
-            }}
-            className="text-[var(--color-text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
-          >
-            <Fingerprint size={14} />
-          </button>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          {QUICK_COLORS.map(color => (
-            <button 
-              key={color.value}
-              onClick={() => {
-                setAccentColor(color.value);
-                setLogoColor(color.value);
-                triggerPulse();
-              }}
-              className={clsx(
-                "h-8 w-8 rounded-full border transition-all hover:scale-110 shadow-lg",
-                accentColor === color.value ? "border-white scale-110 shadow-[0_0_10px_var(--accent-primary)]" : "border-transparent"
-              )}
-              style={{ backgroundColor: color.value }}
-            />
-          ))}
-        </div>
       </div>
 
       {hasAudios && (

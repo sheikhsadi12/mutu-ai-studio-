@@ -25,28 +25,12 @@
   --bg-hover: rgba(255, 255, 255, 0.05);
   --accent-primary: #00f3ff;
   --accent-dim: rgba(0, 243, 255, 0.1);
-  --accent-glow: #00f3ff;
   --border-glass: rgba(255, 255, 255, 0.1);
   --bg-glass: rgba(255, 255, 255, 0.03);
   --text-primary: #ffffff;
   --text-secondary: #9ca3af;
   --text-on-accent: #000000;
   --cyber-purple: #bd00ff;
-}
-
-@keyframes pulse-sweep {
-  0% { opacity: 0; transform: scale(0.5); }
-  50% { opacity: 0.2; transform: scale(1.2); }
-  100% { opacity: 0; transform: scale(2); }
-}
-
-.pulse-effect {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
-  animation: pulse-sweep 1s ease-out forwards;
 }
 
 :root[data-theme="light"] {
