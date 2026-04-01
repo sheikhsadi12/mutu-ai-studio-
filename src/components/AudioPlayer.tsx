@@ -153,7 +153,7 @@ export default function AudioPlayer() {
 
             {/* Cover Art */}
             <div className="flex-grow w-full rounded-2xl bg-gradient-to-br from-[var(--color-neon-cyan-dim)] to-transparent border border-[var(--color-glass-border)] flex items-center justify-center mb-4">
-              <p className="text-sm text-[var(--color-text-secondary)]">Mutu Cover Art</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">AI Cover Art</p>
             </div>
 
             {/* Track Info & Visualizer */}
