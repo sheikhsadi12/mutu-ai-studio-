@@ -18,9 +18,6 @@ interface SettingsState {
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
 
-  voiceSpeed: number;
-  setVoiceSpeed: (speed: number) => void;
-
   isPlaying: boolean;
   setIsPlaying: (isPlaying: boolean) => void;
   
@@ -36,8 +33,8 @@ interface SettingsState {
   isSettingsOpen: boolean;
   setSettingsOpen: (isOpen: boolean) => void;
 
-  activeSettingsPage: 'api' | 'appearance' | 'model' | 'identity' | null;
-  setActiveSettingsPage: (page: 'api' | 'appearance' | 'model' | 'identity' | null) => void;
+  activeSettingsPage: 'api' | 'appearance' | 'model' | null;
+  setActiveSettingsPage: (page: 'api' | 'appearance' | 'model' | null) => void;
 
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
@@ -56,8 +53,16 @@ interface SettingsState {
   currentIndex: number;
   setCurrentIndex: (index: number) => void;
 
+  activeTab: 'studio' | 'live';
+  setActiveTab: (tab: 'studio' | 'live') => void;
+
   clonedVoiceData: string | null;
   setClonedVoiceData: (data: string | null) => void;
+  
+  totalChunks: number;
+  setTotalChunks: (total: number) => void;
+  currentChunkIndex: number;
+  setCurrentChunkIndex: (index: number) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -75,9 +80,6 @@ export const useSettingsStore = create<SettingsState>()(
 
       playbackSpeed: 1.0,
       setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
-
-      voiceSpeed: 0.95,
-      setVoiceSpeed: (speed) => set({ voiceSpeed: speed }),
 
       isPlaying: false,
       setIsPlaying: (isPlaying) => set({ isPlaying }),
@@ -114,8 +116,16 @@ export const useSettingsStore = create<SettingsState>()(
       currentIndex: -1,
       setCurrentIndex: (currentIndex) => set({ currentIndex }),
 
+      activeTab: 'studio',
+      setActiveTab: (tab) => set({ activeTab: tab }),
+
       clonedVoiceData: null,
       setClonedVoiceData: (data) => set({ clonedVoiceData: data }),
+
+      totalChunks: 0,
+      setTotalChunks: (total) => set({ totalChunks: total }),
+      currentChunkIndex: 0,
+      setCurrentChunkIndex: (index) => set({ currentChunkIndex: index }),
     }),
     {
       name: 'mutu-settings-storage',
@@ -123,7 +133,6 @@ export const useSettingsStore = create<SettingsState>()(
         apiKey: state.apiKey, 
         selectedVoice: state.selectedVoice,
         voicePitch: state.voicePitch,
-        voiceSpeed: state.voiceSpeed,
         themeMode: state.themeMode,
         accentColor: state.accentColor,
         clonedVoiceData: state.clonedVoiceData

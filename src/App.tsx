@@ -1,5 +1,6 @@
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
+import LiveConsole from './components/LiveConsole';
 import AudioPlayer from './components/AudioPlayer';
 import SettingsOverlay from './components/SettingsOverlay';
 import SplashScreen from './components/SplashScreen';
@@ -7,10 +8,10 @@ import { useSettingsStore } from './store/useSettingsStore';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { IdentityProvider } from './context/IdentityContext';
+import clsx from 'clsx';
 
 export default function App() {
-  const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
+  const { apiKey, setSidebarOpen, setSettingsOpen, activeTab, setActiveTab } = useSettingsStore();
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function App() {
   }, []);
 
   return (
-    <IdentityProvider>
+    <>
       <AnimatePresence>
         {showSplash && <SplashScreen onComplete={() => {}} />}
       </AnimatePresence>
@@ -40,7 +41,7 @@ export default function App() {
               >
                 <Menu size={20} />
               </button>
-              <span className="font-bold text-[var(--accent-primary)] text-sm">MOTO</span>
+              <span className="font-bold text-[var(--accent-primary)] text-sm">MUTU</span>
             </div>
 
             <button 
@@ -60,8 +61,33 @@ export default function App() {
           </header>
 
           {/* Main Content Area */}
+          <div className="flex items-center justify-center gap-4 p-4 border-b border-[var(--border-glass)] bg-[var(--bg-secondary)]">
+            <button
+              onClick={() => setActiveTab('studio')}
+              className={clsx(
+                "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                activeTab === 'studio' 
+                  ? "bg-[var(--accent-primary)] text-[var(--text-on-accent)] shadow-[0_0_15px_var(--accent-dim)]" 
+                  : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              )}
+            >
+              Studio
+            </button>
+            <button
+              onClick={() => setActiveTab('live')}
+              className={clsx(
+                "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                activeTab === 'live' 
+                  ? "bg-[var(--accent-primary)] text-[var(--text-on-accent)] shadow-[0_0_15px_var(--accent-dim)]" 
+                  : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              )}
+            >
+              Live Console
+            </button>
+          </div>
+
           <div className="flex-1 overflow-hidden relative px-4 sm:px-6 lg:px-8">
-            <Editor />
+            {activeTab === 'studio' ? <Editor /> : <LiveConsole />}
           </div>
 
           {/* Bottom Player */}
@@ -71,6 +97,6 @@ export default function App() {
           <SettingsOverlay />
         </main>
       </div>
-    </IdentityProvider>
+    </>
   );
 }
