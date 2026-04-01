@@ -7,6 +7,7 @@ import { useSettingsStore } from './store/useSettingsStore';
 import { ShieldCheck, AlertTriangle, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { IdentityProvider } from './context/IdentityContext';
 
 export default function App() {
   const { apiKey, setSidebarOpen, setSettingsOpen } = useSettingsStore();
@@ -21,7 +22,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <IdentityProvider>
       <AnimatePresence>
         {showSplash && <SplashScreen onComplete={() => {}} />}
       </AnimatePresence>
@@ -39,7 +40,7 @@ export default function App() {
               >
                 <Menu size={20} />
               </button>
-              <span className="font-bold text-[var(--accent-primary)] text-sm">MUTU</span>
+              <span className="font-bold text-[var(--accent-primary)] text-sm">MOTO</span>
             </div>
 
             <button 
@@ -70,6 +71,6 @@ export default function App() {
           <SettingsOverlay />
         </main>
       </div>
-    </>
+    </IdentityProvider>
   );
 }

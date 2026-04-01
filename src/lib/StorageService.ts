@@ -10,7 +10,7 @@ export interface AudioFile {
   blob: Blob;
 }
 
-interface MutuDB extends DBSchema {
+interface MotoDB extends DBSchema {
   audios: {
     key: string;
     value: AudioFile;
@@ -18,14 +18,14 @@ interface MutuDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'mutu-audio-db';
+const DB_NAME = 'moto-audio-db';
 const DB_VERSION = 1;
 
 class StorageService {
-  private dbPromise: Promise<IDBPDatabase<MutuDB>>;
+  private dbPromise: Promise<IDBPDatabase<MotoDB>>;
 
   constructor() {
-    this.dbPromise = openDB<MutuDB>(DB_NAME, DB_VERSION, {
+    this.dbPromise = openDB<MotoDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         const store = db.createObjectStore('audios', { keyPath: 'id' });
         store.createIndex('by-date', 'timestamp');
