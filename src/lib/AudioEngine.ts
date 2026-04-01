@@ -87,35 +87,44 @@ class AudioEngine {
     return chunks.filter(c => c.trim().length > 0);
   }
 
-  async generateAudio(text: string, styleInstruction: string): Promise<void> {
-    const { apiKey, selectedVoice, voicePitch, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
+  async generateAudio(text: string, styleInstruction: string, play: boolean = true, customVoiceParams?: { voice: string, pitch: number, rate: number, emotion: string }): Promise<Blob | null> {
+    const state = useSettingsStore.getState();
+    const apiKey = state.apiKey;
+    const selectedVoice = customVoiceParams?.voice || state.selectedVoice;
+    const voicePitch = customVoiceParams?.pitch ?? state.voicePitch;
+    const speakingRate = customVoiceParams?.rate ?? state.speakingRate;
+    const emotion = customVoiceParams?.emotion || state.emotion;
+    const clonedVoiceData = state.clonedVoiceData;
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
 
-    // Stop current playback but keep context
-    this.resetPlaybackState();
-    this.initAudioContext();
-    
-    setIsGenerating(true);
-    setIsBuffering(true);
-    this.isBuffering = true;
-    this.isPlaying = true;
-    setIsPlaying(true);
-    this.isStreamFinished = false;
-    this.chunkQueue = [];
-    this.accumulatedBytes = [];
-    this.nextStartTime = this.audioContext!.currentTime + 0.1;
-    this.totalDurationScheduled = 0;
-    this.abortController = new AbortController();
-    this.fullLoadedBuffer = null; // Clear loaded buffer for streaming
-    this.pausedTime = 0;
-    this.playbackStartTime = 0;
+    if (play) {
+      this.resetPlaybackState();
+      this.initAudioContext();
+      state.setIsGenerating(true);
+      state.setIsBuffering(true);
+      this.isBuffering = true;
+      this.isPlaying = true;
+      state.setIsPlaying(true);
+      this.isStreamFinished = false;
+      this.chunkQueue = [];
+      this.accumulatedBytes = [];
+      this.nextStartTime = this.audioContext!.currentTime + 0.1;
+      this.totalDurationScheduled = 0;
+      this.abortController = new AbortController();
+      this.fullLoadedBuffer = null;
+      this.pausedTime = 0;
+      this.playbackStartTime = 0;
+    } else {
+      this.accumulatedBytes = [];
+      this.abortController = new AbortController();
+    }
 
     try {
       const ai = new GoogleGenAI({ apiKey });
       
       const textChunks = this.chunkText(text, 800);
-      this.startScheduler();
+      if (play) this.startScheduler();
 
       for (const chunkText of textChunks) {
         if (this.abortController.signal.aborted) break;
@@ -131,7 +140,7 @@ class AudioEngine {
             };
             const textPart = {
               text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
-                    Style: ${styleInstruction || 'Natural and clear'}. 
+                    Style: ${styleInstruction || 'Natural and clear'}. Emotion: ${emotion}. Speaking Rate: ${speakingRate}x.
                     Text: "${chunkText}"`,
             };
             
@@ -145,7 +154,8 @@ class AudioEngine {
           } else {
             // Standard TTS Mode
             const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
-            const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${chunkText}\"</prosody></speak>`;
+            const rateValue = `${Math.round(speakingRate * 100)}%`;
+            const prompt = `<speak><prosody rate=\"${rateValue}\" pitch=\"${pitchValue}\">Read the following text. Emotion: ${emotion}. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${chunkText}\"</prosody></speak>`;
             
             return await ai.models.generateContentStream({
               model: "gemini-2.5-flash-preview-tts",
@@ -171,45 +181,80 @@ class AudioEngine {
           if (base64Audio) {
             const bytes = this.base64ToUint8(base64Audio);
             this.accumulatedBytes.push(bytes);
-            const buffer = await this.decodeBytes(bytes);
             
-            if (buffer) {
-              this.applyMicroFade(buffer);
-              this.chunkQueue.push(buffer);
-              
-              const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
-              if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
-                this.stopBuffering();
+            if (play) {
+              const buffer = await this.decodeBytes(bytes);
+              if (buffer) {
+                this.applyMicroFade(buffer);
+                this.chunkQueue.push(buffer);
+                
+                const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
+                if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
+                  this.stopBuffering();
+                }
               }
             }
           }
         }
       }
 
-      this.isStreamFinished = true;
-      if (this.isBuffering) this.stopBuffering();
+      if (play) {
+        this.isStreamFinished = true;
+        if (this.isBuffering) this.stopBuffering();
 
-      // Automatically save to library
-      const blob = this.exportMp3();
-      if (blob) {
-        await storageService.saveAudio({
-          id: crypto.randomUUID(),
-          title: `Recording ${new Date().toLocaleTimeString()}`,
-          voice: selectedVoice,
-          style: styleInstruction || 'Custom',
-          duration: this.totalDurationScheduled,
-          timestamp: Date.now(),
-          blob: blob,
-        });
-        window.dispatchEvent(new CustomEvent('library-updated'));
+        // Automatically save to library
+        const blob = this.exportMp3();
+        if (blob) {
+          await storageService.saveAudio({
+            id: crypto.randomUUID(),
+            title: `Recording ${new Date().toLocaleTimeString()}`,
+            voice: selectedVoice,
+            style: styleInstruction || 'Custom',
+            duration: this.totalDurationScheduled,
+            timestamp: Date.now(),
+            blob: blob,
+          });
+          window.dispatchEvent(new CustomEvent('library-updated'));
+        }
+        return blob;
+      } else {
+        return this.exportMp3();
       }
 
     } catch (error) {
       console.error("[AudioEngine] Stream failed:", error);
-      this.stop();
+      if (play) this.stop();
       throw error;
     } finally {
-      setIsGenerating(false);
+      if (play) state.setIsGenerating(false);
+    }
+  }
+
+  async adjustVolume(blob: Blob, volumeMultiplier: number): Promise<Blob | null> {
+    this.initAudioContext();
+    if (!this.audioContext) return null;
+
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const originalBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      const newBuffer = this.audioContext.createBuffer(
+        originalBuffer.numberOfChannels,
+        originalBuffer.length,
+        originalBuffer.sampleRate
+      );
+
+      for (let i = 0; i < originalBuffer.numberOfChannels; i++) {
+        const channelData = originalBuffer.getChannelData(i);
+        const newChannelData = newBuffer.getChannelData(i);
+        for (let j = 0; j < originalBuffer.length; j++) {
+          newChannelData[j] = Math.max(-1, Math.min(1, channelData[j] * volumeMultiplier));
+        }
+      }
+      
+      return this.bufferToMp3(newBuffer);
+    } catch (e) {
+      console.error("Volume adjustment failed", e);
+      return null;
     }
   }
 

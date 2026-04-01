@@ -1,6 +1,6 @@
 import { useState, useEffect, MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Trash2, Download, Play, Edit2, Check, Music, Archive, MoreVertical, X, Scissors } from 'lucide-react';
+import { Search, Trash2, Download, Play, Edit2, Check, Music, Archive, MoreVertical, X, Scissors, Volume2 } from 'lucide-react';
 import RenameModal from './RenameModal';
 import { storageService, AudioFile } from '../lib/StorageService';
 import { audioEngine } from '../lib/AudioEngine';
@@ -30,6 +30,9 @@ export default function AudioLibrary() {
   const [trimmingId, setTrimmingId] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState('0');
   const [trimEnd, setTrimEnd] = useState('0');
+
+  const [volumeId, setVolumeId] = useState<string | null>(null);
+  const [volumeMultiplier, setVolumeMultiplier] = useState('1.0');
 
   const [activeTab, setActiveTab] = useState<'recordings' | 'merged'>('recordings');
   const [mergedAudios, setMergedAudios] = useState<AudioFile[]>([]);
@@ -97,13 +100,21 @@ export default function AudioLibrary() {
 
   const startTrimming = (audio: AudioFile) => {
     setTrimmingId(audio.id);
+    setVolumeId(null);
     setTrimStart('0');
     setTrimEnd(audio.duration ? audio.duration.toFixed(2) : '0');
     setActiveMenuId(null);
   };
 
+  const startVolumeAdjust = (audio: AudioFile) => {
+    setVolumeId(audio.id);
+    setTrimmingId(null);
+    setVolumeMultiplier('1.0');
+    setActiveMenuId(null);
+  };
+
   const handleTrim = async (id: string) => {
-    const audio = audios.find(a => a.id === id);
+    const audio = audios.find(a => a.id === id) || mergedAudios.find(a => a.id === id);
     if (!audio) return;
     
     const start = parseFloat(trimStart);
@@ -130,6 +141,41 @@ export default function AudioLibrary() {
       window.dispatchEvent(new CustomEvent('library-updated'));
     } else {
       alert("Trim failed");
+    }
+  };
+
+  const handleVolumeAdjust = async (id: string) => {
+    const audio = audios.find(a => a.id === id) || mergedAudios.find(a => a.id === id);
+    if (!audio) return;
+    
+    const multiplier = parseFloat(volumeMultiplier);
+    
+    if (isNaN(multiplier) || multiplier <= 0) {
+      alert("Invalid volume multiplier");
+      return;
+    }
+    
+    try {
+      const adjustedBlob = await audioEngine.adjustVolume(audio.blob, multiplier);
+      if (adjustedBlob) {
+        await storageService.saveAudio({
+          id: crypto.randomUUID(),
+          title: `${audio.title} (Vol ${multiplier}x)`,
+          voice: audio.voice,
+          style: audio.style,
+          duration: audio.duration,
+          timestamp: Date.now(),
+          blob: adjustedBlob
+        });
+        setVolumeId(null);
+        loadLibrary();
+        window.dispatchEvent(new CustomEvent('library-updated'));
+      } else {
+        alert("Volume adjustment failed");
+      }
+    } catch (error) {
+      console.error("Volume adjustment error:", error);
+      alert("Volume adjustment failed");
     }
   };
 
@@ -277,6 +323,22 @@ export default function AudioLibrary() {
                   <button onClick={() => setTrimmingId(null)} className="text-red-400 hover:text-red-300 p-1"><X size={14} /></button>
                 </div>
               )}
+              {volumeId === audio.id && (
+                <div className="flex items-center gap-2 mt-2 bg-[var(--color-bg-surface)] p-2 rounded animate-in fade-in slide-in-from-top-2">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Vol (x):</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="5.0"
+                    value={volumeMultiplier}
+                    onChange={(e) => setVolumeMultiplier(e.target.value)}
+                    className="w-16 rounded bg-[var(--color-bg-hover)] px-1 py-0.5 text-xs text-[var(--color-text-primary)] focus:ring-1 focus:ring-[var(--color-neon-cyan)]"
+                  />
+                  <button onClick={() => handleVolumeAdjust(audio.id)} className="text-green-400 hover:text-green-300 p-1"><Check size={14} /></button>
+                  <button onClick={() => setVolumeId(null)} className="text-red-400 hover:text-red-300 p-1"><X size={14} /></button>
+                </div>
+              )}
             </div>
         </div>
 
@@ -325,6 +387,13 @@ export default function AudioLibrary() {
                   >
                     <Scissors size={14} />
                     Trim
+                  </button>
+                  <button
+                    onClick={() => startVolumeAdjust(audio)}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+                  >
+                    <Volume2 size={14} />
+                    Volume
                   </button>
 
                   <button

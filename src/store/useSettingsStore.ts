@@ -4,6 +4,18 @@ import { AudioFile } from '../lib/StorageService';
 
 export type VoiceName = 'Kore' | 'Fenrir' | 'Puck' | 'Charon' | 'Zephyr';
 
+export interface BatchItem {
+  id: string;
+  text: string;
+  styleInstruction: string;
+  voice: VoiceName;
+  pitch: number;
+  rate: number;
+  emotion: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  error?: string;
+}
+
 interface SettingsState {
   apiKey: string | null;
   setApiKey: (key: string) => void;
@@ -14,6 +26,12 @@ interface SettingsState {
   
   voicePitch: number;
   setVoicePitch: (pitch: number) => void;
+
+  speakingRate: number;
+  setSpeakingRate: (rate: number) => void;
+
+  emotion: string;
+  setEmotion: (emotion: string) => void;
 
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
@@ -53,16 +71,16 @@ interface SettingsState {
   currentIndex: number;
   setCurrentIndex: (index: number) => void;
 
-  activeTab: 'studio' | 'live';
-  setActiveTab: (tab: 'studio' | 'live') => void;
-
   clonedVoiceData: string | null;
   setClonedVoiceData: (data: string | null) => void;
-  
-  totalChunks: number;
-  setTotalChunks: (total: number) => void;
-  currentChunkIndex: number;
-  setCurrentChunkIndex: (index: number) => void;
+
+  batchQueue: BatchItem[];
+  setBatchQueue: (queue: BatchItem[]) => void;
+  addBatchItem: (item: Omit<BatchItem, 'id' | 'status'>) => void;
+  removeBatchItem: (id: string) => void;
+  updateBatchItemStatus: (id: string, status: BatchItem['status'], error?: string) => void;
+  isBatchProcessing: boolean;
+  setIsBatchProcessing: (isProcessing: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -77,6 +95,12 @@ export const useSettingsStore = create<SettingsState>()(
       
       voicePitch: 0,
       setVoicePitch: (pitch) => set({ voicePitch: pitch }),
+
+      speakingRate: 1.0,
+      setSpeakingRate: (rate) => set({ speakingRate: rate }),
+
+      emotion: 'neutral',
+      setEmotion: (emotion) => set({ emotion }),
 
       playbackSpeed: 1.0,
       setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
@@ -116,16 +140,24 @@ export const useSettingsStore = create<SettingsState>()(
       currentIndex: -1,
       setCurrentIndex: (currentIndex) => set({ currentIndex }),
 
-      activeTab: 'studio',
-      setActiveTab: (tab) => set({ activeTab: tab }),
-
       clonedVoiceData: null,
       setClonedVoiceData: (data) => set({ clonedVoiceData: data }),
 
-      totalChunks: 0,
-      setTotalChunks: (total) => set({ totalChunks: total }),
-      currentChunkIndex: 0,
-      setCurrentChunkIndex: (index) => set({ currentChunkIndex: index }),
+      batchQueue: [],
+      setBatchQueue: (queue) => set({ batchQueue: queue }),
+      addBatchItem: (item) => set((state) => ({
+        batchQueue: [...state.batchQueue, { ...item, id: crypto.randomUUID(), status: 'pending' }]
+      })),
+      removeBatchItem: (id) => set((state) => ({
+        batchQueue: state.batchQueue.filter(item => item.id !== id)
+      })),
+      updateBatchItemStatus: (id, status, error) => set((state) => ({
+        batchQueue: state.batchQueue.map(item => 
+          item.id === id ? { ...item, status, error } : item
+        )
+      })),
+      isBatchProcessing: false,
+      setIsBatchProcessing: (isProcessing) => set({ isBatchProcessing: isProcessing }),
     }),
     {
       name: 'mutu-settings-storage',
@@ -133,6 +165,8 @@ export const useSettingsStore = create<SettingsState>()(
         apiKey: state.apiKey, 
         selectedVoice: state.selectedVoice,
         voicePitch: state.voicePitch,
+        speakingRate: state.speakingRate,
+        emotion: state.emotion,
         themeMode: state.themeMode,
         accentColor: state.accentColor,
         clonedVoiceData: state.clonedVoiceData
