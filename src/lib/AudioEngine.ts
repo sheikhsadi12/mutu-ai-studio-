@@ -48,7 +48,7 @@ class AudioEngine {
   }
 
   async generateAudio(text: string, styleInstruction: string): Promise<void> {
-    const { apiKey, selectedVoice, voicePitch, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress, setTotalChunks, setCurrentChunkIndex } = useSettingsStore.getState();
+    const { apiKey, selectedVoice, voicePitch, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
 
@@ -70,98 +70,71 @@ class AudioEngine {
     this.fullLoadedBuffer = null; // Clear loaded buffer for streaming
     this.pausedTime = 0;
     this.playbackStartTime = 0;
-    setTotalChunks(0);
-    setCurrentChunkIndex(0);
 
     try {
       const ai = new GoogleGenAI({ apiKey });
       
-      // Intelligent Chunking
-      const MAX_CHUNK_LENGTH = 3500;
-      const textChunks: string[] = [];
-      let currentChunk = "";
-      
-      const sentences = text.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g) || [text];
-      for (const sentence of sentences) {
-        if ((currentChunk + sentence).length > MAX_CHUNK_LENGTH) {
-          if (currentChunk) textChunks.push(currentChunk.trim());
-          currentChunk = sentence;
+      const generateStream = async () => {
+        if (clonedVoiceData) {
+          // Voice Cloning Mode using gemini-2.5-flash
+          const audioPart = {
+            inlineData: {
+              mimeType: "audio/mp3",
+              data: clonedVoiceData.split(',')[1] || clonedVoiceData,
+            },
+          };
+          const textPart = {
+            text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
+                  Style: ${styleInstruction || 'Natural and clear'}. 
+                  Text: "${text}"`,
+          };
+          
+          return await ai.models.generateContentStream({
+            model: "gemini-2.5-flash",
+            contents: [{ parts: [audioPart, textPart] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+            },
+          });
         } else {
-          currentChunk += sentence;
-        }
-      }
-      if (currentChunk) textChunks.push(currentChunk.trim());
-
-      setTotalChunks(textChunks.length);
-      this.startScheduler();
-
-      for (let i = 0; i < textChunks.length; i++) {
-        if (this.abortController.signal.aborted) break;
-        
-        setCurrentChunkIndex(i + 1);
-        const chunkText = textChunks[i];
-        
-        const generateStream = async () => {
-          if (clonedVoiceData) {
-            // Voice Cloning Mode using gemini-2.5-flash
-            const audioPart = {
-              inlineData: {
-                mimeType: "audio/mp3",
-                data: clonedVoiceData.split(',')[1] || clonedVoiceData,
-              },
-            };
-            const textPart = {
-              text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
-                    Style: ${styleInstruction || 'Natural and clear'}. 
-                    Text: "${chunkText}"`,
-            };
-            
-            return await ai.models.generateContentStream({
-              model: "gemini-2.5-flash",
-              contents: [{ parts: [audioPart, textPart] }],
-              config: {
-                responseModalities: [Modality.AUDIO],
-              },
-            });
-          } else {
-            // Standard TTS Mode
-            const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
-            const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${chunkText}\"</prosody></speak>`;
-            
-            return await ai.models.generateContentStream({
-              model: "gemini-2.5-flash-preview-tts",
-              contents: [{ parts: [{ text: prompt }] }],
-              config: {
-                responseModalities: [Modality.AUDIO],
-                speechConfig: {
-                  voiceConfig: {
-                    prebuiltVoiceConfig: { voiceName: selectedVoice },
-                  },
+          // Standard TTS Mode
+          const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
+          const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${text}\"</prosody></speak>`;
+          
+          return await ai.models.generateContentStream({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: selectedVoice },
                 },
               },
-            });
-          }
-        };
+            },
+          });
+        }
+      };
 
-        const stream = await this.retry(generateStream);
+      const stream = await this.retry(generateStream);
+      this.startScheduler();
 
-        for await (const chunk of stream) {
-          if (this.abortController.signal.aborted) break;
+      for await (const chunk of stream) {
+        if (this.abortController.signal.aborted) break;
 
-          const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-          if (base64Audio) {
-            const bytes = this.base64ToUint8(base64Audio);
-            this.accumulatedBytes.push(bytes);
-            const buffer = await this.decodeBytes(bytes);
+        const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (base64Audio) {
+          const bytes = this.base64ToUint8(base64Audio);
+          this.accumulatedBytes.push(bytes);
+          const buffer = await this.decodeBytes(bytes);
+          
+          if (buffer) {
+            this.applyMicroFade(buffer);
+            this.chunkQueue.push(buffer);
             
-            if (buffer) {
-              this.applyMicroFade(buffer);
-              this.chunkQueue.push(buffer);
-              
-              const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
-              if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
-                this.stopBuffering();
-              }
+            const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
+            if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
+              this.stopBuffering();
             }
           }
         }

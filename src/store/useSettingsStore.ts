@@ -33,8 +33,8 @@ interface SettingsState {
   isSettingsOpen: boolean;
   setSettingsOpen: (isOpen: boolean) => void;
 
-  activeSettingsPage: 'api' | 'appearance' | 'model' | null;
-  setActiveSettingsPage: (page: 'api' | 'appearance' | 'model' | null) => void;
+  activeSettingsPage: 'api' | 'appearance' | 'model' | 'identity' | null;
+  setActiveSettingsPage: (page: 'api' | 'appearance' | 'model' | 'identity' | null) => void;
 
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
@@ -53,16 +53,8 @@ interface SettingsState {
   currentIndex: number;
   setCurrentIndex: (index: number) => void;
 
-  activeTab: 'studio' | 'live';
-  setActiveTab: (tab: 'studio' | 'live') => void;
-
   clonedVoiceData: string | null;
   setClonedVoiceData: (data: string | null) => void;
-  
-  totalChunks: number;
-  setTotalChunks: (total: number) => void;
-  currentChunkIndex: number;
-  setCurrentChunkIndex: (index: number) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -116,16 +108,8 @@ export const useSettingsStore = create<SettingsState>()(
       currentIndex: -1,
       setCurrentIndex: (currentIndex) => set({ currentIndex }),
 
-      activeTab: 'studio',
-      setActiveTab: (tab) => set({ activeTab: tab }),
-
       clonedVoiceData: null,
       setClonedVoiceData: (data) => set({ clonedVoiceData: data }),
-
-      totalChunks: 0,
-      setTotalChunks: (total) => set({ totalChunks: total }),
-      currentChunkIndex: 0,
-      setCurrentChunkIndex: (index) => set({ currentChunkIndex: index }),
     }),
     {
       name: 'mutu-settings-storage',
