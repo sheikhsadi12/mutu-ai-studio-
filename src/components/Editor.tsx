@@ -10,7 +10,7 @@ import Toast, { ToastRef } from './Toast';
 export default function Editor() {
   const [text, setText] = useState('');
   const [styleInstruction, setStyleInstruction] = useState('');
-  const { isGenerating, apiKey, setSidebarOpen, clonedVoiceData, setClonedVoiceData } = useSettingsStore();
+  const { isGenerating, apiKey, setSidebarOpen, clonedVoiceData, setClonedVoiceData, currentChunkIndex, totalChunks } = useSettingsStore();
   const toastRef = useRef<ToastRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,7 +170,27 @@ export default function Editor() {
           />
           
           {/* Action Bar */}
-          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-end">
+          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-between items-center">
+             {isGenerating && totalChunks > 1 ? (
+               <div className="flex items-center gap-2 px-4">
+                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
+                   Processing Chunk {currentChunkIndex} / {totalChunks}
+                 </span>
+                 <div className="flex gap-1">
+                   {Array.from({ length: totalChunks }).map((_, i) => (
+                     <div 
+                       key={i} 
+                       className={clsx(
+                         "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                         i < currentChunkIndex ? "bg-[var(--color-neon-cyan)] shadow-[0_0_5px_var(--color-neon-cyan)]" : "bg-[var(--color-glass-border)]"
+                       )}
+                     />
+                   ))}
+                 </div>
+               </div>
+             ) : (
+               <div />
+             )}
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating}

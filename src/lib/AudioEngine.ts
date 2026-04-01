@@ -47,6 +47,46 @@ class AudioEngine {
     }
   }
 
+  private chunkText(text: string, maxLength: number = 600): string[] {
+    const paragraphs = text.split(/\n\n+/);
+    const chunks: string[] = [];
+    
+    for (const p of paragraphs) {
+      if (p.length <= maxLength) {
+        chunks.push(p);
+      } else {
+        const sentences = p.match(/[^.!?]+[.!?]+/g) || [p];
+        let currentChunk = "";
+        for (const s of sentences) {
+          if ((currentChunk + s).length <= maxLength) {
+            currentChunk += s + " ";
+          } else {
+            if (currentChunk.trim()) chunks.push(currentChunk.trim());
+            
+            // If a single sentence is still too long, split it by words
+            if (s.length > maxLength) {
+              const words = s.split(/\s+/);
+              let wordChunk = "";
+              for (const w of words) {
+                if ((wordChunk + w).length <= maxLength) {
+                  wordChunk += w + " ";
+                } else {
+                  if (wordChunk.trim()) chunks.push(wordChunk.trim());
+                  wordChunk = w + " ";
+                }
+              }
+              currentChunk = wordChunk;
+            } else {
+              currentChunk = s + " ";
+            }
+          }
+        }
+        if (currentChunk.trim()) chunks.push(currentChunk.trim());
+      }
+    }
+    return chunks.filter(c => c.trim().length > 0);
+  }
+
   async generateAudio(text: string, styleInstruction: string): Promise<void> {
     const { apiKey, selectedVoice, voicePitch, clonedVoiceData, setIsGenerating, setIsPlaying, setIsBuffering, setProgress } = useSettingsStore.getState();
 
@@ -74,67 +114,73 @@ class AudioEngine {
     try {
       const ai = new GoogleGenAI({ apiKey });
       
-      const generateStream = async () => {
-        if (clonedVoiceData) {
-          // Voice Cloning Mode using gemini-2.5-flash
-          const audioPart = {
-            inlineData: {
-              mimeType: "audio/mp3",
-              data: clonedVoiceData.split(',')[1] || clonedVoiceData,
-            },
-          };
-          const textPart = {
-            text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
-                  Style: ${styleInstruction || 'Natural and clear'}. 
-                  Text: "${text}"`,
-          };
-          
-          return await ai.models.generateContentStream({
-            model: "gemini-2.5-flash",
-            contents: [{ parts: [audioPart, textPart] }],
-            config: {
-              responseModalities: [Modality.AUDIO],
-            },
-          });
-        } else {
-          // Standard TTS Mode
-          const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
-          const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${text}\"</prosody></speak>`;
-          
-          return await ai.models.generateContentStream({
-            model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text: prompt }] }],
-            config: {
-              responseModalities: [Modality.AUDIO],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: selectedVoice },
-                },
-              },
-            },
-          });
-        }
-      };
-
-      const stream = await this.retry(generateStream);
+      const textChunks = this.chunkText(text, 800);
       this.startScheduler();
 
-      for await (const chunk of stream) {
+      for (const chunkText of textChunks) {
         if (this.abortController.signal.aborted) break;
 
-        const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (base64Audio) {
-          const bytes = this.base64ToUint8(base64Audio);
-          this.accumulatedBytes.push(bytes);
-          const buffer = await this.decodeBytes(bytes);
-          
-          if (buffer) {
-            this.applyMicroFade(buffer);
-            this.chunkQueue.push(buffer);
+        const generateStream = async () => {
+          if (clonedVoiceData) {
+            // Voice Cloning Mode using gemini-2.5-flash
+            const audioPart = {
+              inlineData: {
+                mimeType: "audio/mp3",
+                data: clonedVoiceData.split(',')[1] || clonedVoiceData,
+              },
+            };
+            const textPart = {
+              text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
+                    Style: ${styleInstruction || 'Natural and clear'}. 
+                    Text: "${chunkText}"`,
+            };
             
-            const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
-            if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
-              this.stopBuffering();
+            return await ai.models.generateContentStream({
+              model: "gemini-2.5-flash",
+              contents: [{ parts: [audioPart, textPart] }],
+              config: {
+                responseModalities: [Modality.AUDIO],
+              },
+            });
+          } else {
+            // Standard TTS Mode
+            const pitchValue = voicePitch === 0 ? "default" : `${voicePitch > 0 ? '+' : ''}${voicePitch * 2}st`;
+            const prompt = `<speak><prosody rate=\"100%\" pitch=\"${pitchValue}\">Read the following text. Style: ${styleInstruction || 'Natural and clear'}. Text: \"${chunkText}\"</prosody></speak>`;
+            
+            return await ai.models.generateContentStream({
+              model: "gemini-2.5-flash-preview-tts",
+              contents: [{ parts: [{ text: prompt }] }],
+              config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: selectedVoice },
+                  },
+                },
+              },
+            });
+          }
+        };
+
+        const stream = await this.retry(generateStream);
+
+        for await (const chunk of stream) {
+          if (this.abortController.signal.aborted) break;
+
+          const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+          if (base64Audio) {
+            const bytes = this.base64ToUint8(base64Audio);
+            this.accumulatedBytes.push(bytes);
+            const buffer = await this.decodeBytes(bytes);
+            
+            if (buffer) {
+              this.applyMicroFade(buffer);
+              this.chunkQueue.push(buffer);
+              
+              const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
+              if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
+                this.stopBuffering();
+              }
             }
           }
         }
@@ -532,13 +578,21 @@ class AudioEngine {
   exportMp3(): Blob | null {
     if (this.accumulatedBytes.length === 0) return null;
     
-    const totalLength = this.accumulatedBytes.reduce((acc, b) => acc + b.length, 0);
+    // Strip WAV headers from each chunk if present
+    const cleanBytes = this.accumulatedBytes.map(b => {
+      if (b.length >= 44 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46) {
+        return b.subarray(44);
+      }
+      return b;
+    });
+
+    const totalLength = cleanBytes.reduce((acc, b) => acc + b.length, 0);
     // Ensure even length for 16-bit PCM data
     const evenTotalLength = totalLength - (totalLength % 2);
     const joined = new Uint8Array(evenTotalLength);
     
     let offset = 0;
-    for (const b of this.accumulatedBytes) {
+    for (const b of cleanBytes) {
       const remaining = evenTotalLength - offset;
       if (remaining <= 0) break;
       const toCopy = Math.min(b.length, remaining);
@@ -546,13 +600,7 @@ class AudioEngine {
       offset += toCopy;
     }
     
-    // Check if the data already has a WAV header (starts with 'RIFF')
-    // If it does, we need to strip it before passing to MP3 encoder
     let pcmData = joined;
-    if (joined.length >= 44 && joined[0] === 0x52 && joined[1] === 0x49 && joined[2] === 0x46 && joined[3] === 0x46) {
-      // Assuming standard 44-byte WAV header
-      pcmData = joined.subarray(44);
-    }
     
     // Convert to Int16Array for lamejs
     const samples = new Int16Array(pcmData.buffer, pcmData.byteOffset, pcmData.byteLength / 2);
