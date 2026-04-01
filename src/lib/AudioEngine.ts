@@ -115,6 +115,10 @@ class AudioEngine {
       this.fullLoadedBuffer = null;
       this.pausedTime = 0;
       this.playbackStartTime = 0;
+      
+      window.dispatchEvent(new CustomEvent('mutu-log', { 
+        detail: { type: 'neural', message: `Initializing synthesis for ${text.length} characters...` } 
+      }));
     } else {
       this.accumulatedBytes = [];
       this.abortController = new AbortController();
@@ -129,6 +133,10 @@ class AudioEngine {
       for (const chunkText of textChunks) {
         if (this.abortController.signal.aborted) break;
 
+        window.dispatchEvent(new CustomEvent('mutu-log', { 
+          detail: { type: 'info', message: `Processing chunk: "${chunkText.substring(0, 30)}..."` } 
+        }));
+
         const generateStream = async () => {
           if (clonedVoiceData) {
             // Voice Cloning Mode using gemini-2.5-flash
@@ -139,11 +147,25 @@ class AudioEngine {
               },
             };
             const textPart = {
-              text: `You are an advanced AI voice cloning system. Analyze the attached audio sample to extract the speaker's exact vocal timbre, tone, pitch, and cadence. 
-                    Generate highly realistic, human-like audio for the following text, perfectly matching the speaker's voice characteristics. 
-                    Ensure the delivery is indistinguishable from a human, with natural breathing, pacing, and emotional resonance.
-                    Style: ${styleInstruction || 'Natural and clear'}. Emotion: ${emotion}. Speaking Rate: ${speakingRate}x.
-                    Text: "${chunkText}"`,
+              text: `You are an elite AI voice cloning specialist. Your task is to perform high-fidelity voice synthesis that is indistinguishable from the provided human speaker.
+                    
+                    1. VOICE ANALYSIS: Meticulously analyze the attached audio sample. Extract the unique vocal fingerprint, including:
+                       - Timbre and resonance (the specific "color" of the voice).
+                       - Pitch range and natural inflection patterns.
+                       - Cadence, rhythm, and characteristic pauses.
+                       - Subtle breath sounds and mouth noises that signify human speech.
+                    
+                    2. SYNTHESIS REQUIREMENTS: Generate audio for the text below that perfectly replicates the speaker's identity.
+                       - Ensure fluid, natural prosody that matches the context of the text.
+                       - Avoid any robotic, monotonous, or artificial artifacts.
+                       - Maintain consistent vocal quality throughout the entire duration, even for long scripts.
+                       - Incorporate appropriate emotional depth and nuanced expression based on the text's meaning.
+                    
+                    Style: ${styleInstruction || 'Natural, conversational, and professional'}. 
+                    Emotion: ${emotion}. 
+                    Speaking Rate: ${speakingRate}x.
+                    
+                    Text to Synthesize: "${chunkText}"`,
             };
             
             return await ai.models.generateContentStream({
@@ -181,6 +203,9 @@ class AudioEngine {
 
           const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
           if (base64Audio) {
+            window.dispatchEvent(new CustomEvent('mutu-log', { 
+              detail: { type: 'success', message: `Received neural audio packet (${base64Audio.length} bytes)` } 
+            }));
             const bytes = this.base64ToUint8(base64Audio);
             this.accumulatedBytes.push(bytes);
             
@@ -225,10 +250,18 @@ class AudioEngine {
 
     } catch (error) {
       console.error("[AudioEngine] Stream failed:", error);
+      window.dispatchEvent(new CustomEvent('mutu-log', { 
+        detail: { type: 'error', message: `Synthesis Error: ${error instanceof Error ? error.message : 'Unknown'}` } 
+      }));
       if (play) this.stop();
       throw error;
     } finally {
-      if (play) state.setIsGenerating(false);
+      if (play) {
+        state.setIsGenerating(false);
+        window.dispatchEvent(new CustomEvent('mutu-log', { 
+          detail: { type: 'neural', message: 'Synthesis cycle complete.' } 
+        }));
+      }
     }
   }
 

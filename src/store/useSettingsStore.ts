@@ -70,6 +70,7 @@ interface SettingsState {
   setPlaylist: (list: AudioFile[]) => void;
   currentIndex: number;
   setCurrentIndex: (index: number) => void;
+  addAudioFile: (file: AudioFile) => void;
 
   clonedVoiceData: string | null;
   setClonedVoiceData: (data: string | null) => void;
@@ -139,6 +140,9 @@ export const useSettingsStore = create<SettingsState>()(
       setPlaylist: (playlist) => set({ playlist }),
       currentIndex: -1,
       setCurrentIndex: (currentIndex) => set({ currentIndex }),
+      addAudioFile: (file) => set((state) => ({
+        playlist: [file, ...state.playlist]
+      })),
 
       clonedVoiceData: null,
       setClonedVoiceData: (data) => set({ clonedVoiceData: data }),

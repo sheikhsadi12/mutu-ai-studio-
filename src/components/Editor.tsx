@@ -126,18 +126,20 @@ export default function Editor() {
           // Add to library
           const newFile = {
             id: Date.now().toString() + Math.random().toString(36).substring(7),
-            name: `Batch_${item.voice}_${new Date().toLocaleTimeString()} [${qualityText}]`,
+            title: `Batch_${item.voice}_${new Date().toLocaleTimeString()} [${qualityText}]`,
+            voice: item.voice,
+            style: item.styleInstruction,
             blob,
             duration: 0, // Duration will be calculated when loaded
-            createdAt: Date.now(),
+            timestamp: Date.now(),
           };
           useSettingsStore.getState().addAudioFile(newFile);
           updateBatchItemStatus(item.id, 'completed');
         } else {
-          updateBatchItemStatus(item.id, 'error', 'Failed to generate audio blob');
+          updateBatchItemStatus(item.id, 'failed', 'Failed to generate audio blob');
         }
       } catch (error) {
-        updateBatchItemStatus(item.id, 'error', error instanceof Error ? error.message : 'Unknown error');
+        updateBatchItemStatus(item.id, 'failed', error instanceof Error ? error.message : 'Unknown error');
       }
     }
     
@@ -343,7 +345,7 @@ export default function Editor() {
                     {item.status === 'pending' && <Clock size={16} className="text-[var(--color-text-secondary)]" />}
                     {item.status === 'processing' && <Loader2 size={16} className="text-[var(--color-neon-cyan)] animate-spin" />}
                     {item.status === 'completed' && <CheckCircle2 size={16} className="text-green-400" />}
-                    {item.status === 'error' && (
+                    {item.status === 'failed' && (
                       <div className="group relative">
                         <AlertCircle size={16} className="text-red-400" />
                         <div className="absolute right-0 top-full mt-1 hidden w-48 rounded bg-red-500/10 border border-red-500/20 p-2 text-[10px] text-red-400 group-hover:block z-10">
