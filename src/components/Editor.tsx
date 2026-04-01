@@ -1,6 +1,6 @@
 import { useState, useRef, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X, Plus, Play, CheckCircle2, AlertCircle, Clock, Smile, Gauge } from 'lucide-react';
+import { Type, Trash2, Sparkles, Zap, Loader2, Mic, Upload, X, Smile } from 'lucide-react';
 import clsx from 'clsx';
 import VoiceSelector from './VoiceSelector';
 import { audioEngine } from '../lib/AudioEngine';
@@ -15,9 +15,7 @@ export default function Editor() {
   const [styleInstruction, setStyleInstruction] = useState('');
   const { 
     isGenerating, apiKey, clonedVoiceData, setClonedVoiceData,
-    selectedVoice, voicePitch, speakingRate, emotion,
-    batchQueue, addBatchItem, removeBatchItem, updateBatchItemStatus,
-    isBatchProcessing, setIsBatchProcessing
+    selectedVoice, voicePitch, speakingRate, emotion
   } = useSettingsStore();
   
   const toastRef = useRef<ToastRef>(null);
@@ -80,69 +78,6 @@ export default function Editor() {
     } catch (error) {
       toastRef.current?.show("Synthesis Failed: Check API Key or Quota.");
     }
-  };
-
-  const handleAddToQueue = () => {
-    if (!text.trim()) {
-      toastRef.current?.show("Please enter some text to queue.");
-      return;
-    }
-    if (text.length > MAX_CHARS) {
-      toastRef.current?.show(`Text exceeds maximum limit of ${MAX_CHARS} characters.`);
-      return;
-    }
-    
-    addBatchItem({
-      text,
-      styleInstruction,
-      voice: selectedVoice,
-      pitch: voicePitch,
-      rate: speakingRate,
-      emotion: emotion
-    });
-    
-    toastRef.current?.show("Added to batch queue.");
-    handleClear();
-  };
-
-  const handleProcessQueue = async () => {
-    if (batchQueue.length === 0) return;
-    if (!apiKey) {
-      toastRef.current?.show("Neural Link Failed: Missing API Key.");
-      return;
-    }
-
-    setIsBatchProcessing(true);
-    
-    for (const item of batchQueue) {
-      if (item.status === 'completed') continue;
-      
-      updateBatchItemStatus(item.id, 'processing');
-      try {
-        // Calculate quality metrics for the title
-        let score = 100;
-        if (item.rate > 1.5 || item.rate < 0.8) score -= 15;
-        if (Math.abs(item.pitch) > 5) score -= 10;
-        if (item.text.length > 2000) score -= 5;
-        let qualityText = score >= 90 ? "Excellent" : score >= 75 ? "Good" : "Fair";
-        const title = `Batch_${item.voice}_${new Date().toLocaleTimeString()} [${qualityText}]`;
-
-        await audioEngine.generateAudio(item.text, item.styleInstruction, false, {
-          voice: item.voice,
-          pitch: item.pitch,
-          rate: item.rate,
-          emotion: item.emotion,
-          title: title
-        });
-        
-        updateBatchItemStatus(item.id, 'completed');
-      } catch (error) {
-        updateBatchItemStatus(item.id, 'failed', error instanceof Error ? error.message : 'Unknown error');
-      }
-    }
-    
-    setIsBatchProcessing(false);
-    toastRef.current?.show("Batch processing complete.");
   };
 
   return (
@@ -269,15 +204,7 @@ export default function Editor() {
           />
           
           {/* Action Bar */}
-          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-between items-center">
-             <button
-                onClick={handleAddToQueue}
-                disabled={isGenerating || !text.trim()}
-                className="flex items-center gap-2 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-glass-border)] px-4 py-2 font-bold text-[var(--color-text-primary)] transition-all hover:border-[var(--color-neon-cyan)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus size={18} />
-                <span className="text-xs">ADD TO QUEUE</span>
-              </button>
+          <div className="border-t border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] p-2 flex justify-end items-center">
              <button
                 onClick={handleGenerate}
                 disabled={isGenerating || !text.trim()}
@@ -300,79 +227,6 @@ export default function Editor() {
       </div>
 
       <VoiceSelector />
-
-      {/* Batch Queue Panel */}
-      {batchQueue.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-[var(--color-glass-border)] bg-[var(--color-cyber-black)]/40 backdrop-blur-2xl overflow-hidden noise-overlay">
-          <div className="flex items-center justify-between border-b border-[var(--color-glass-border)] bg-[var(--color-bg-hover)] px-4 py-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)]">
-              <Menu size={14} />
-              <span>Batch Queue ({batchQueue.length})</span>
-            </div>
-            <button
-              onClick={handleProcessQueue}
-              disabled={isBatchProcessing || batchQueue.every(item => item.status === 'completed')}
-              className="flex items-center gap-2 rounded-lg bg-[var(--color-neon-cyan)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-on-accent)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {isBatchProcessing ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>PROCESSING...</span>
-                </>
-              ) : (
-                <>
-                  <Play size={14} fill="currentColor" />
-                  <span>PROCESS QUEUE</span>
-                </>
-              )}
-            </button>
-          </div>
-          <div className="max-h-[300px] overflow-y-auto p-2 space-y-2">
-            <AnimatePresence>
-              {batchQueue.map((item) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="flex items-center justify-between rounded-xl border border-[var(--color-glass-border)] bg-[var(--color-bg-surface)] p-3"
-                >
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="truncate text-sm text-[var(--color-text-primary)] font-medium">
-                      {item.text}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-[var(--color-text-secondary)]">
-                      <span className="flex items-center gap-1"><Mic size={10}/> {item.voice}</span>
-                      <span className="flex items-center gap-1"><Smile size={10}/> {item.emotion}</span>
-                      <span className="flex items-center gap-1"><Gauge size={10}/> {item.rate}x</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {item.status === 'pending' && <Clock size={16} className="text-[var(--color-text-secondary)]" />}
-                    {item.status === 'processing' && <Loader2 size={16} className="text-[var(--color-neon-cyan)] animate-spin" />}
-                    {item.status === 'completed' && <CheckCircle2 size={16} className="text-green-400" />}
-                    {item.status === 'failed' && (
-                      <div className="group relative">
-                        <AlertCircle size={16} className="text-red-400" />
-                        <div className="absolute right-0 top-full mt-1 hidden w-48 rounded bg-red-500/10 border border-red-500/20 p-2 text-[10px] text-red-400 group-hover:block z-10">
-                          {item.error}
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => removeBatchItem(item.id)}
-                      disabled={item.status === 'processing'}
-                      className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Pause, Square, SkipBack, SkipForward, Volume2, Mic2, Save, Check, Download, ChevronUp, ChevronDown, Music, SlidersHorizontal } from 'lucide-react';
+import { Play, Pause, Square, SkipBack, SkipForward, Volume2, Mic2, Save, Check, Download, ChevronUp, ChevronDown, Music } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { audioEngine } from '../lib/AudioEngine';
 import { useEffect, useState, ChangeEvent } from 'react';
@@ -10,14 +10,13 @@ import AudioVisualizer from './AudioVisualizer';
 
 export default function AudioPlayer() {
   const { 
-    isPlaying, isBuffering, progress, playbackSpeed, setPlaybackSpeed, 
+    isPlaying, isBuffering, progress, 
     selectedVoice, currentAudioId, playlist, currentIndex, setCurrentIndex, setIsPlaying 
   } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false); // Track if current audio is already saved
   const [isExpanded, setIsExpanded] = useState(false); // For mobile expansion
   const [bgmVolume, setBgmVolume] = useState(0.5);
-  const [pitch, setPitch] = useState(0);
 
   // Reset saved state when a new audio is generated
   useEffect(() => {
@@ -54,12 +53,6 @@ export default function AudioPlayer() {
     await audioEngine.loadBlob(audio.blob);
     audioEngine.play();
     setIsPlaying(true);
-  };
-
-  const handleSpeedChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const speed = parseFloat(e.target.value);
-    setPlaybackSpeed(speed);
-    audioEngine.setSpeed(speed);
   };
 
   const handleSave = async () => {
@@ -198,10 +191,6 @@ export default function AudioPlayer() {
               <div className="flex items-center gap-3">
                 <Music size={16} className="text-[var(--color-text-secondary)]"/>
                 <input type="range" min="0" max="1" step="0.01" value={bgmVolume} onChange={(e) => setBgmVolume(parseFloat(e.target.value))} className="w-full accent-[var(--color-neon-cyan)] h-1.5 bg-[var(--color-bg-hover)] rounded-lg appearance-none cursor-pointer" />
-              </div>
-              <div className="flex items-center gap-3">
-                <SlidersHorizontal size={16} className="text-[var(--color-text-secondary)]"/>
-                <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(e) => setPitch(parseInt(e.target.value))} className="w-full accent-[var(--color-neon-cyan)] h-1.5 bg-[var(--color-bg-hover)] rounded-lg appearance-none cursor-pointer" />
               </div>
             </div>
           </motion.div>

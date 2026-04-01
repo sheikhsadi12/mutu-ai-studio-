@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useSettingsStore, VoiceName } from '../store/useSettingsStore';
-import { Check, Mic, ChevronDown, ChevronUp, SlidersHorizontal, Gauge, Smile } from 'lucide-react';
+import { Check, Mic, ChevronDown, ChevronUp, Smile } from 'lucide-react';
 import clsx from 'clsx';
 import { useState } from 'react';
 
@@ -19,8 +19,6 @@ const EMOTIONS = [
 export default function VoiceSelector() {
   const { 
     selectedVoice, setSelectedVoice, 
-    voicePitch, setVoicePitch,
-    speakingRate, setSpeakingRate,
     emotion, setEmotion
   } = useSettingsStore();
   const [isOpen, setIsOpen] = useState(false);
@@ -83,50 +81,6 @@ export default function VoiceSelector() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)] mb-2">
-            <SlidersHorizontal size={12} />
-            <span>Pitch Adjustment</span>
-          </label>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-bg-hover)] border border-[var(--color-glass-border)] noise-overlay">
-            <input
-              type="range"
-              min="-10"
-              max="10"
-              step="1"
-              value={voicePitch}
-              onChange={(e) => setVoicePitch(Number(e.target.value))}
-              className="w-full h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer accent-[var(--color-neon-cyan)]"
-            />
-            <span className="text-xs font-mono text-[var(--color-neon-cyan)] w-8 text-right">
-              {voicePitch > 0 ? '+' : ''}{voicePitch}
-            </span>
-          </div>
-        </div>
-
-        <div>
-          <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-neon-cyan)] mb-2">
-            <Gauge size={12} />
-            <span>Speaking Rate</span>
-          </label>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-bg-hover)] border border-[var(--color-glass-border)] noise-overlay">
-            <input
-              type="range"
-              min="0.5"
-              max="2.0"
-              step="0.1"
-              value={speakingRate}
-              onChange={(e) => setSpeakingRate(Number(e.target.value))}
-              className="w-full h-1.5 bg-[var(--color-bg-surface)] rounded-lg appearance-none cursor-pointer accent-[var(--color-neon-cyan)]"
-            />
-            <span className="text-xs font-mono text-[var(--color-neon-cyan)] w-8 text-right">
-              {speakingRate.toFixed(1)}x
-            </span>
-          </div>
         </div>
       </div>
 
