@@ -139,7 +139,9 @@ class AudioEngine {
               },
             };
             const textPart = {
-              text: `Generate audio for the following text, mimicking the voice in the attached audio sample as closely as possible. 
+              text: `You are an advanced AI voice cloning system. Analyze the attached audio sample to extract the speaker's exact vocal timbre, tone, pitch, and cadence. 
+                    Generate highly realistic, human-like audio for the following text, perfectly matching the speaker's voice characteristics. 
+                    Ensure the delivery is indistinguishable from a human, with natural breathing, pacing, and emotional resonance.
                     Style: ${styleInstruction || 'Natural and clear'}. Emotion: ${emotion}. Speaking Rate: ${speakingRate}x.
                     Text: "${chunkText}"`,
             };

@@ -1,6 +1,6 @@
 import { useState, useRef, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X, Plus, Play, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X, Plus, Play, CheckCircle2, AlertCircle, Clock, Smile, Gauge } from 'lucide-react';
 import clsx from 'clsx';
 import VoiceSelector from './VoiceSelector';
 import { audioEngine } from '../lib/AudioEngine';
