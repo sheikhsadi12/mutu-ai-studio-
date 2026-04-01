@@ -8,6 +8,7 @@ export interface AudioFile {
   duration: number;
   timestamp: number;
   blob: Blob;
+  wordCount?: number;
 }
 
 interface MutuDB extends DBSchema {

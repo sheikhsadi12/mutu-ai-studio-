@@ -87,13 +87,14 @@ class AudioEngine {
     return chunks.filter(c => c.trim().length > 0);
   }
 
-  async generateAudio(text: string, styleInstruction: string, play: boolean = true, customVoiceParams?: { voice: string, pitch: number, rate: number, emotion: string }): Promise<Blob | null> {
+  async generateAudio(text: string, styleInstruction: string, play: boolean = true, customVoiceParams?: { voice: string, pitch: number, rate: number, emotion: string, title?: string }): Promise<Blob | null> {
     const state = useSettingsStore.getState();
     const apiKey = state.apiKey;
     const selectedVoice = customVoiceParams?.voice || state.selectedVoice;
     const voicePitch = customVoiceParams?.pitch ?? state.voicePitch;
     const speakingRate = customVoiceParams?.rate ?? state.speakingRate;
     const emotion = customVoiceParams?.emotion || state.emotion;
+    const customTitle = customVoiceParams?.title;
     const clonedVoiceData = state.clonedVoiceData;
 
     if (!apiKey) throw new Error("Neural Link Failed: Missing API Key");
@@ -127,15 +128,18 @@ class AudioEngine {
     try {
       const ai = new GoogleGenAI({ apiKey });
       
-      const textChunks = this.chunkText(text, 800);
+      const textChunks = this.chunkText(text, 600); // Smaller chunks for better reliability
       if (play) this.startScheduler();
 
+      let chunkIndex = 1;
       for (const chunkText of textChunks) {
         if (this.abortController.signal.aborted) break;
 
         window.dispatchEvent(new CustomEvent('mutu-log', { 
-          detail: { type: 'info', message: `Processing chunk: "${chunkText.substring(0, 30)}..."` } 
+          detail: { type: 'info', message: `Processing chunk ${chunkIndex}/${textChunks.length}: "${chunkText.substring(0, 30)}..."` } 
         }));
+        
+        chunkIndex++;
 
         const generateStream = async () => {
           if (clonedVoiceData) {
@@ -224,35 +228,51 @@ class AudioEngine {
           }
         }
       }
+      
+      // Synthesis is done, even if playback is still happening
+      const blob = this.exportMp3();
+      if (blob) {
+        const wordCount = text.split(/\s+/).filter(Boolean).length;
+        const audioId = crypto.randomUUID();
+        const audioTitle = customTitle || `Recording ${new Date().toLocaleTimeString()}`;
+        
+        await storageService.saveAudio({
+          id: audioId,
+          title: audioTitle,
+          voice: selectedVoice,
+          style: styleInstruction || 'Custom',
+          duration: this.totalDurationScheduled, // Note: this might be 0 if not playing, but will be updated on load
+          timestamp: Date.now(),
+          blob: blob,
+          wordCount: wordCount
+        });
+        
+        window.dispatchEvent(new CustomEvent('library-updated'));
+        
+        window.dispatchEvent(new CustomEvent('mutu-log', { 
+          detail: { type: 'success', message: `Audio saved to library: ${audioTitle} (${wordCount} words)` } 
+        }));
+      }
 
       if (play) {
         this.isStreamFinished = true;
         if (this.isBuffering) this.stopBuffering();
-
-        // Automatically save to library
-        const blob = this.exportMp3();
-        if (blob) {
-          await storageService.saveAudio({
-            id: crypto.randomUUID(),
-            title: `Recording ${new Date().toLocaleTimeString()}`,
-            voice: selectedVoice,
-            style: styleInstruction || 'Custom',
-            duration: this.totalDurationScheduled,
-            timestamp: Date.now(),
-            blob: blob,
-          });
-          window.dispatchEvent(new CustomEvent('library-updated'));
-        }
         return blob;
       } else {
-        return this.exportMp3();
+        return blob;
       }
 
     } catch (error) {
       console.error("[AudioEngine] Stream failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
       window.dispatchEvent(new CustomEvent('mutu-log', { 
-        detail: { type: 'error', message: `Synthesis Error: ${error instanceof Error ? error.message : 'Unknown'}` } 
+        detail: { 
+          type: 'error', 
+          message: `Synthesis Error: ${errorMessage}. ${errorMessage.includes('limit') || errorMessage.includes('quota') ? 'Try shortening your script or checking your API quota.' : ''}` 
+        } 
       }));
+      
       if (play) this.stop();
       throw error;
     } finally {

@@ -4,8 +4,11 @@ import { Type, Trash2, Sparkles, Zap, Loader2, Menu, Mic, Upload, X, Plus, Play,
 import clsx from 'clsx';
 import VoiceSelector from './VoiceSelector';
 import { audioEngine } from '../lib/AudioEngine';
+import { storageService } from '../lib/StorageService';
 import { useSettingsStore } from '../store/useSettingsStore';
 import Toast, { ToastRef } from './Toast';
+
+const MAX_CHARS = 10000; // Define a reasonable limit for the UI
 
 export default function Editor() {
   const [text, setText] = useState('');
@@ -52,6 +55,10 @@ export default function Editor() {
       toastRef.current?.show("Neural Link Failed: Missing API Key.");
       return;
     }
+    if (text.length > MAX_CHARS) {
+      toastRef.current?.show(`Text exceeds maximum limit of ${MAX_CHARS} characters.`);
+      return;
+    }
 
     try {
       await audioEngine.generateAudio(text, styleInstruction, true, {
@@ -78,6 +85,10 @@ export default function Editor() {
   const handleAddToQueue = () => {
     if (!text.trim()) {
       toastRef.current?.show("Please enter some text to queue.");
+      return;
+    }
+    if (text.length > MAX_CHARS) {
+      toastRef.current?.show(`Text exceeds maximum limit of ${MAX_CHARS} characters.`);
       return;
     }
     
@@ -108,36 +119,23 @@ export default function Editor() {
       
       updateBatchItemStatus(item.id, 'processing');
       try {
-        const blob = await audioEngine.generateAudio(item.text, item.styleInstruction, false, {
+        // Calculate quality metrics for the title
+        let score = 100;
+        if (item.rate > 1.5 || item.rate < 0.8) score -= 15;
+        if (Math.abs(item.pitch) > 5) score -= 10;
+        if (item.text.length > 2000) score -= 5;
+        let qualityText = score >= 90 ? "Excellent" : score >= 75 ? "Good" : "Fair";
+        const title = `Batch_${item.voice}_${new Date().toLocaleTimeString()} [${qualityText}]`;
+
+        await audioEngine.generateAudio(item.text, item.styleInstruction, false, {
           voice: item.voice,
           pitch: item.pitch,
           rate: item.rate,
-          emotion: item.emotion
+          emotion: item.emotion,
+          title: title
         });
         
-        if (blob) {
-          // Calculate quality metrics
-          let score = 100;
-          if (item.rate > 1.5 || item.rate < 0.8) score -= 15;
-          if (Math.abs(item.pitch) > 5) score -= 10;
-          if (item.text.length > 2000) score -= 5;
-          let qualityText = score >= 90 ? "Excellent" : score >= 75 ? "Good" : "Fair";
-          
-          // Add to library
-          const newFile = {
-            id: Date.now().toString() + Math.random().toString(36).substring(7),
-            title: `Batch_${item.voice}_${new Date().toLocaleTimeString()} [${qualityText}]`,
-            voice: item.voice,
-            style: item.styleInstruction,
-            blob,
-            duration: 0, // Duration will be calculated when loaded
-            timestamp: Date.now(),
-          };
-          useSettingsStore.getState().addAudioFile(newFile);
-          updateBatchItemStatus(item.id, 'completed');
-        } else {
-          updateBatchItemStatus(item.id, 'failed', 'Failed to generate audio blob');
-        }
+        updateBatchItemStatus(item.id, 'completed');
       } catch (error) {
         updateBatchItemStatus(item.id, 'failed', error instanceof Error ? error.message : 'Unknown error');
       }
@@ -241,9 +239,17 @@ export default function Editor() {
               <span>SCRIPT EDITOR</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider">
-                {text.length} chars
-              </span>
+              <div className="flex flex-col items-end">
+                <span className={clsx(
+                  "text-[10px] uppercase tracking-wider transition-colors",
+                  text.length > MAX_CHARS * 0.9 ? "text-red-400 font-bold" : "text-[var(--color-text-secondary)]"
+                )}>
+                  {text.length} / {MAX_CHARS} chars
+                </span>
+                <span className="text-[8px] text-[var(--color-text-secondary)] uppercase tracking-tighter">
+                  ~{Math.ceil(text.split(/\s+/).filter(Boolean).length)} words • {Math.ceil(text.split(/\s+/).filter(Boolean).length / 150)} min est.
+                </span>
+              </div>
               <button
                 onClick={handleClear}
                 className="flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors"
