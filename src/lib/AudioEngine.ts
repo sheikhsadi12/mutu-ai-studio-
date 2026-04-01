@@ -132,8 +132,10 @@ class AudioEngine {
       if (play) this.startScheduler();
 
       let chunkIndex = 1;
+      let encounteredError = false;
+
       for (const chunkText of textChunks) {
-        if (this.abortController.signal.aborted) break;
+        if (this.abortController.signal.aborted || encounteredError) break;
 
         window.dispatchEvent(new CustomEvent('mutu-log', { 
           detail: { type: 'info', message: `Processing chunk ${chunkIndex}/${textChunks.length}: "${chunkText.substring(0, 30)}..."` } 
@@ -200,31 +202,52 @@ class AudioEngine {
           }
         };
 
-        const stream = await this.retry(generateStream);
+        try {
+          const stream = await this.retry(generateStream);
 
-        for await (const chunk of stream) {
-          if (this.abortController.signal.aborted) break;
+          for await (const chunk of stream) {
+            if (this.abortController.signal.aborted) break;
 
-          const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-          if (base64Audio) {
-            window.dispatchEvent(new CustomEvent('mutu-log', { 
-              detail: { type: 'success', message: `Received neural audio packet (${base64Audio.length} bytes)` } 
-            }));
-            const bytes = this.base64ToUint8(base64Audio);
-            this.accumulatedBytes.push(bytes);
-            
-            if (play) {
-              const buffer = await this.decodeBytes(bytes);
-              if (buffer) {
-                this.applyMicroFade(buffer);
-                this.chunkQueue.push(buffer);
-                
-                const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
-                if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
-                  this.stopBuffering();
+            const base64Audio = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+            if (base64Audio) {
+              window.dispatchEvent(new CustomEvent('mutu-log', { 
+                detail: { type: 'success', message: `Received neural audio packet (${base64Audio.length} bytes)` } 
+              }));
+              const bytes = this.base64ToUint8(base64Audio);
+              this.accumulatedBytes.push(bytes);
+              
+              if (play) {
+                const buffer = await this.decodeBytes(bytes);
+                if (buffer) {
+                  this.applyMicroFade(buffer);
+                  this.chunkQueue.push(buffer);
+                  
+                  const bufferedDuration = this.chunkQueue.reduce((acc, b) => acc + b.duration, 0);
+                  if (this.isBuffering && bufferedDuration >= this.BUFFER_THRESHOLD) {
+                    this.stopBuffering();
+                  }
                 }
               }
             }
+          }
+        } catch (chunkError) {
+          console.error("[AudioEngine] Chunk processing failed:", chunkError);
+          const errorMessage = chunkError instanceof Error ? chunkError.message : "Unknown error";
+          
+          window.dispatchEvent(new CustomEvent('mutu-log', { 
+            detail: { 
+              type: 'error', 
+              message: `Synthesis Error on chunk ${chunkIndex-1}: ${errorMessage}. ${errorMessage.includes('limit') || errorMessage.includes('quota') ? 'Saving generated portion.' : ''}` 
+            } 
+          }));
+          
+          if (this.accumulatedBytes.length === 0) {
+            // If we haven't generated anything at all, throw the error to abort completely
+            throw chunkError;
+          } else {
+            // We have some audio. Break the loop to save and play what we have.
+            encounteredError = true;
+            break;
           }
         }
       }
