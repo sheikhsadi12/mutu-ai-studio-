@@ -8,7 +8,7 @@ import { storageService } from '../lib/StorageService';
 import { useSettingsStore } from '../store/useSettingsStore';
 import Toast, { ToastRef } from './Toast';
 
-const MAX_CHARS = 10000; // Define a reasonable limit for the UI
+const MAX_CHARS = 5000; // Define a reasonable limit for the UI
 
 export default function Editor() {
   const [text, setText] = useState('');

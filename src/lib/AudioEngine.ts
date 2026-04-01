@@ -128,7 +128,7 @@ class AudioEngine {
     try {
       const ai = new GoogleGenAI({ apiKey });
       
-      const textChunks = this.chunkText(text, 600); // Smaller chunks for better reliability
+      const textChunks = this.chunkText(text, 5000); // Increased to 5000 to minimize requests
       if (play) this.startScheduler();
 
       let chunkIndex = 1;
@@ -318,10 +318,30 @@ class AudioEngine {
     for (let i = 0; i < retries; i++) {
       try {
         return await fn();
-      } catch (err) {
+      } catch (err: any) {
         lastError = err;
-        const delay = Math.pow(2, i) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        const errorMessage = err.message || "";
+        
+        // Check for 429 Resource Exhausted
+        if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+          // Try to extract retry delay if present in the error message
+          let delay = Math.pow(2, i) * 2000 + Math.random() * 1000;
+          
+          // If it's a 429, we should wait longer. The error message often says 60s.
+          if (i === 0) delay = 5000; // First retry after 5s
+          else if (i === 1) delay = 30000; // Second retry after 30s
+          else delay = 60000; // Third retry after 60s
+
+          window.dispatchEvent(new CustomEvent('mutu-log', { 
+            detail: { type: 'warning', message: `Rate limit hit. Retrying in ${Math.round(delay/1000)}s... (Attempt ${i + 1}/${retries})` } 
+          }));
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          // For other errors, use shorter backoff
+          const delay = Math.pow(2, i) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
     }
     throw lastError;
